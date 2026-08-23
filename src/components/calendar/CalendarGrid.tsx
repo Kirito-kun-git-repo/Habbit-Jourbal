@@ -24,11 +24,15 @@ import {
 } from "@/lib/dates";
 import { dayProgress } from "@/lib/progress";
 import {
-  CHART_HEIGHT,
   DayTotalChart,
+  MAX_CHART_HEIGHT,
+  MIN_CHART_HEIGHT,
   TrendBadge,
   consistencyTrend,
+  type DaySegment,
 } from "./DayTotalChart";
+import { habitColor } from "@/lib/colors";
+import { useSettings } from "@/lib/store/settings";
 import { HabitCell, type GridMode } from "./HabitCell";
 
 // Detailed cells need room for a thumbnail and a few lines of note; compact
@@ -81,6 +85,8 @@ export const CalendarGrid = forwardRef<GridApi, Props>(function CalendarGrid(
   const todayISO = today();
   const scroller = useRef<HTMLDivElement>(null);
   const minDayCol = DAY_COL[mode];
+  const chartHeight = useSettings((s) => s.chartHeight);
+  const setChartHeight = useSettings((s) => s.setChartHeight);
 
   // Contiguous runs of days belonging to the same month, for the top label row.
   const monthSpans = useMemo(() => {
@@ -97,16 +103,31 @@ export const CalendarGrid = forwardRef<GridApi, Props>(function CalendarGrid(
   // How much of the whole day got done, averaged over every habit. A habit
   // that is half-finished contributes half, same as everywhere else.
   const dayTotals = useMemo(() => {
-    const totals: Record<string, { fraction: number; done: number }> = {};
+    const totals: Record<
+      string,
+      { fraction: number; done: number; segments: DaySegment[] }
+    > = {};
+    const share = habits.length ? 1 / habits.length : 0;
+
     for (const date of days) {
       let sum = 0;
       let done = 0;
+      const segments: DaySegment[] = [];
       for (const habit of habits) {
         const progress = dayProgress(entryMap[habit.id]?.[date], subtasksByHabit[habit.id] ?? []);
         sum += progress.fraction;
         if (progress.complete) done += 1;
+        // Each habit owns an equal slice of the day, scaled by how much of it
+        // was done — so the stack shows who earned the height.
+        if (progress.fraction > 0) {
+          segments.push({
+            habitId: habit.id,
+            color: habitColor(habit.color),
+            share: progress.fraction * share,
+          });
+        }
       }
-      totals[date] = { fraction: habits.length ? sum / habits.length : 0, done };
+      totals[date] = { fraction: habits.length ? sum / habits.length : 0, done, segments };
     }
     return totals;
   }, [days, habits, entryMap, subtasksByHabit]);
@@ -187,6 +208,46 @@ export const CalendarGrid = forwardRef<GridApi, Props>(function CalendarGrid(
       if (frame) cancelAnimationFrame(frame);
     };
   }, [columnWidth, days]);
+
+  // --- drag the chart's top edge to resize it ------------------------------
+  // Window listeners rather than pointer capture: the handle lives inside a
+  // cell with overflow-hidden, so the pointer leaves it almost immediately.
+  const onResizeStart = (event: React.PointerEvent) => {
+    event.preventDefault();
+    event.stopPropagation(); // don't let the grid start a horizontal pan
+    const startY = event.clientY;
+    const startHeight = chartHeight;
+    document.body.classList.add("is-resizing");
+
+    const onMove = (move: PointerEvent) => {
+      const next = startHeight - (move.clientY - startY);
+      setChartHeight(Math.round(Math.min(MAX_CHART_HEIGHT, Math.max(MIN_CHART_HEIGHT, next))));
+    };
+    const onUp = () => {
+      document.body.classList.remove("is-resizing");
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+  };
+
+  const resizeHandle = (
+    <div
+      role="separator"
+      aria-orientation="horizontal"
+      aria-label="Drag to resize the chart"
+      title="Drag to resize"
+      onPointerDown={onResizeStart}
+      className="group/resize absolute inset-x-0 top-0 z-20 flex h-2.5 cursor-row-resize items-start"
+    >
+      <span className="h-[3px] w-full bg-transparent transition-colors duration-150 group-hover/resize:bg-accent" />
+    </div>
+  );
+
+  useEffect(() => () => document.body.classList.remove("is-resizing"), []);
 
   // --- drag to pan ---------------------------------------------------------
   // Trackpads already scroll horizontally; this is for dragging with a mouse or
@@ -278,20 +339,22 @@ export const CalendarGrid = forwardRef<GridApi, Props>(function CalendarGrid(
               key={date}
               data-daycol
               data-date={date}
-              className={`sticky top-[27px] z-20 flex flex-col items-center justify-center border-b border-r border-line py-1.5 ${
-                isToday ? "bg-accent-tint" : "bg-page"
+              className={`sticky top-[27px] z-20 flex flex-col items-center justify-center border-b border-r py-1.5 ${
+                isToday
+                  ? "border-line bg-accent text-white shadow-[inset_1px_0_0_var(--color-accent),inset_-1px_0_0_var(--color-accent)]"
+                  : "border-line bg-page"
               }`}
             >
               <span
                 className={`text-[10.5px] uppercase tracking-[0.06em] ${
-                  isToday ? "text-accent-strong" : "text-muted"
+                  isToday ? "text-white/85" : "text-muted"
                 }`}
               >
-                {weekdayShort(date)}
+                {isToday ? "Today" : weekdayShort(date)}
               </span>
               <span
                 className={`tabular text-[13.5px] ${
-                  isToday ? "font-semibold text-accent-strong" : "font-medium text-ink-soft"
+                  isToday ? "font-bold text-white" : "font-medium text-ink-soft"
                 }`}
               >
                 {dayOfMonth(date)}
@@ -346,8 +409,9 @@ export const CalendarGrid = forwardRef<GridApi, Props>(function CalendarGrid(
         <div className="contents">
           <div
             className="sticky bottom-0 left-0 z-40 flex flex-col gap-1.5 overflow-hidden border-r border-t border-line bg-surface px-3 pb-3 pt-2.5 pr-9 sm:px-4 sm:pr-10"
-            style={{ height: CHART_HEIGHT }}
+            style={{ height: chartHeight }}
           >
+            {resizeHandle}
             {/* Trend sits at the top of the chart, level with the 100% rule,
                 rather than floating halfway down the bars. */}
             <TrendBadge delta={trend.delta} />
@@ -371,14 +435,16 @@ export const CalendarGrid = forwardRef<GridApi, Props>(function CalendarGrid(
           </div>
 
           <div
-            style={{ gridColumn: `span ${days.length}`, height: CHART_HEIGHT }}
+            style={{ gridColumn: `span ${days.length}`, height: chartHeight }}
             className="sticky bottom-0 z-30 overflow-hidden border-t border-line bg-surface"
           >
+            {resizeHandle}
             <DayTotalChart
               days={days}
               totals={dayTotals}
               habitCount={habits.length}
               todayISO={todayISO}
+              height={chartHeight}
             />
           </div>
         </div>

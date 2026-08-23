@@ -29,9 +29,12 @@ type SettingsState = {
   theme: ThemeKey;
   font: FontKey;
   gridMode: GridMode;
+  /** Height of the day-total chart; dragged by its top edge. */
+  chartHeight: number;
   setTheme: (theme: ThemeKey) => void;
   setFont: (font: FontKey) => void;
   setGridMode: (mode: GridMode) => void;
+  setChartHeight: (height: number) => void;
 };
 
 /**
@@ -45,9 +48,11 @@ export const useSettings = create<SettingsState>()(
       theme: "warm",
       font: "inter",
       gridMode: "compact",
+      chartHeight: 172,
       setTheme: (theme) => set({ theme }),
       setFont: (font) => set({ font }),
       setGridMode: (gridMode) => set({ gridMode }),
+      setChartHeight: (chartHeight) => set({ chartHeight }),
     }),
     { name: "habit-journal/settings" },
   ),

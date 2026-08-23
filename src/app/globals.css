@@ -226,3 +226,10 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* While dragging the chart's top edge. */
+.is-resizing,
+.is-resizing * {
+  cursor: row-resize !important;
+  user-select: none !important;
+}

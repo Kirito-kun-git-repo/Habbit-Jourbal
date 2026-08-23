@@ -62,8 +62,12 @@ function HabitCellBase({
   const shell = [
     "group relative flex w-full border-b border-r border-line transition-colors duration-150",
     detailed ? "flex-col items-stretch gap-1.5 p-1.5 text-left" : "h-[72px] items-center justify-center",
-    isWeekend && progress.fraction === 0 ? "bg-page" : "",
-    isToday ? "shadow-[inset_0_0_0_1px_var(--color-accent)]" : "",
+    isWeekend && progress.fraction === 0 && !isToday ? "bg-page" : "",
+    // A ring per cell stacks into a ladder of boxes. Rails on the left and
+    // right edges instead, so the column reads as one continuous band.
+    isToday
+      ? "bg-accent-tint shadow-[inset_1px_0_0_var(--color-accent),inset_-1px_0_0_var(--color-accent)]"
+      : "",
     isFuture && !entry ? "opacity-55" : "",
   ].join(" ");
 

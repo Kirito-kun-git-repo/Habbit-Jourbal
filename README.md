@@ -18,14 +18,18 @@ whenever you drift.
 
 ## Day total
 
-A 172px chart sits under the habits, one bar per day, showing how much of that
-day got done across every habit — a habit at 2/3 contributes two thirds,
-matching how completion is scored everywhere else. Bars run red → amber → green
-with the score, so the colour carries the reading on its own.
+A chart sits under the habits, one bar per day. Each bar is **stacked out of
+the habits that earned it**: every habit owns an equal slice of the day, scaled
+by how much of it got done, in that habit's own colour. So the stack height is
+the day's completion and each band shows who contributed.
 
-Over the bars is a **7-day trailing average**, and an arrow at the top of the
-label column shows which way it's going — comparing the last 7 days against the
-7 before. Direction only: the bars and the line already say how much by.
+A line **rides along the tops of the bars**, lifted a few pixels clear so it
+reads as sitting on them rather than cutting through, with a dot at each day.
+An arrow at the top of the label column gives the direction — the last 7 days
+against the 7 before. Direction only: the bars already say how much by.
+
+**Drag the chart's top edge** to resize it, 96px to 460px; the height is
+persisted with the other appearance settings.
 
 The chart always sits on the bottom edge of the screen. An explicit `1fr`
 spacer row takes up whatever height the habits leave, so with three habits the
@@ -34,6 +38,15 @@ habits overflow, the spacer collapses and `sticky bottom-0` keeps the chart
 in place while the rows scroll under it. Days
 with nothing logged draw no bar at all — a minimum-height stub reads as noise
 and leaks out from under the sticky label column.
+
+## Today
+
+Today's column is the one you're meant to fill, so it gets the strongest
+treatment on the page: a solid accent header reading **TODAY** in white, a tint
+behind the whole column, and accent rails down its left and right edges that
+run unbroken from the header through the habit rows and into the chart. Rails
+rather than a ring per cell — a ring on every cell stacks into a ladder of
+boxes and reads as noise instead of one focal column.
 
 ## Appearance
 
