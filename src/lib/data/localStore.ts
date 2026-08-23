@@ -6,6 +6,7 @@
  *
  * This is a development/demo backend. Configure Supabase for anything real.
  */
+import type { HabitColorKey } from "@/lib/colors";
 import type { ISODate } from "@/lib/dates";
 import {
   StoreError,
@@ -13,6 +14,7 @@ import {
   type Habit,
   type HabitEntry,
   type HabitStore,
+  type Subtask,
 } from "./types";
 
 const KEY = "habit-journal/v1";
@@ -21,9 +23,14 @@ const DB_NAME = "habit-journal-photos";
 const DB_STORE = "photos";
 
 type Account = { id: string; email: string; password: string };
-type Db = { accounts: Account[]; habits: Habit[]; entries: HabitEntry[] };
+type Db = {
+  accounts: Account[];
+  habits: Habit[];
+  entries: HabitEntry[];
+  subtasks: Subtask[];
+};
 
-const EMPTY: Db = { accounts: [], habits: [], entries: [] };
+const EMPTY: Db = { accounts: [], habits: [], entries: [], subtasks: [] };
 
 function read(): Db {
   if (typeof window === "undefined") return EMPTY;
@@ -126,7 +133,7 @@ export const localStore: HabitStore = {
       .sort((a, b) => a.position - b.position);
   },
 
-  async createHabit(name) {
+  async createHabit(name, color: HabitColorKey) {
     const userId = currentUserId();
     const db = read();
     const mine = db.habits.filter((h) => h.user_id === userId);
@@ -134,6 +141,7 @@ export const localStore: HabitStore = {
       id: crypto.randomUUID(),
       user_id: userId,
       name,
+      color,
       position: mine.reduce((max, h) => Math.max(max, h.position), -1) + 1,
       is_active: true,
       created_at: now(),
@@ -154,11 +162,67 @@ export const localStore: HabitStore = {
     write(db);
   },
 
+  async recolorHabit(id, color: HabitColorKey) {
+    const userId = currentUserId();
+    const db = read();
+    const habit = db.habits.find((h) => h.id === id && h.user_id === userId);
+    if (!habit) throw new StoreError("That habit no longer exists.");
+    habit.color = color;
+    habit.updated_at = now();
+    write(db);
+  },
+
   async deleteHabit(id) {
     const userId = currentUserId();
     const db = read();
     db.habits = db.habits.filter((h) => !(h.id === id && h.user_id === userId));
     db.entries = db.entries.filter((e) => e.habit_id !== id);
+    db.subtasks = db.subtasks.filter((s) => s.habit_id !== id);
+    write(db);
+  },
+
+  async listSubtasks() {
+    const userId = currentUserId();
+    return read()
+      .subtasks.filter((s) => s.user_id === userId)
+      .sort((a, b) => a.position - b.position);
+  },
+
+  async createSubtask(habitId, name) {
+    const userId = currentUserId();
+    const db = read();
+    if (!db.habits.some((h) => h.id === habitId && h.user_id === userId)) {
+      throw new StoreError("That habit no longer exists.");
+    }
+    const siblings = db.subtasks.filter((s) => s.habit_id === habitId);
+    const subtask: Subtask = {
+      id: crypto.randomUUID(),
+      habit_id: habitId,
+      user_id: userId,
+      name,
+      position: siblings.reduce((max, s) => Math.max(max, s.position), -1) + 1,
+      created_at: now(),
+      updated_at: now(),
+    };
+    db.subtasks.push(subtask);
+    write(db);
+    return subtask;
+  },
+
+  async renameSubtask(id, name) {
+    const userId = currentUserId();
+    const db = read();
+    const subtask = db.subtasks.find((s) => s.id === id && s.user_id === userId);
+    if (!subtask) throw new StoreError("That subtask no longer exists.");
+    subtask.name = name;
+    subtask.updated_at = now();
+    write(db);
+  },
+
+  async deleteSubtask(id) {
+    const userId = currentUserId();
+    const db = read();
+    db.subtasks = db.subtasks.filter((s) => !(s.id === id && s.user_id === userId));
     write(db);
   },
 

@@ -3,7 +3,9 @@
 import { useMemo } from "react";
 import { JournalCard, hasContent, type JournalEntry } from "@/components/journal/JournalView";
 import { CheckIcon } from "@/components/ui/icons";
-import type { Habit } from "@/lib/data";
+import type { Habit, Subtask } from "@/lib/data";
+import { habitColor } from "@/lib/colors";
+import { dayProgress } from "@/lib/progress";
 import type { EntryMap } from "@/lib/hooks/useHabitData";
 import { formatLongDate, today, weekDays, weekdayShort, dayOfMonth, type ISODate } from "@/lib/dates";
 
@@ -11,11 +13,13 @@ export function WeeklyView({
   habits,
   weekStartISO,
   entryMap,
+  subtasksByHabit,
   onOpenCell,
 }: {
   habits: Habit[];
   weekStartISO: ISODate;
   entryMap: EntryMap;
+  subtasksByHabit: Record<string, Subtask[]>;
   onOpenCell: (habitId: string, date: ISODate) => void;
 }) {
   const days = useMemo(() => weekDays(weekStartISO), [weekStartISO]);
@@ -23,13 +27,18 @@ export function WeeklyView({
 
   const highlights = useMemo(() => {
     const names = new Map(habits.map((h) => [h.id, h.name]));
+    const colors = new Map(habits.map((h) => [h.id, h.color as string]));
     const rows: { date: ISODate; entries: JournalEntry[] }[] = [];
     for (const date of days) {
       const dayEntries = habits
         .map((habit) => entryMap[habit.id]?.[date])
         .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
         .filter((entry) => entry.note?.trim() || entry.photo_path)
-        .map((entry) => ({ ...entry, habitName: names.get(entry.habit_id) ?? "" }));
+        .map((entry) => ({
+          ...entry,
+          habitName: names.get(entry.habit_id) ?? "",
+          habitColor: colors.get(entry.habit_id) ?? "",
+        }));
       if (dayEntries.length > 0) rows.push({ date, entries: dayEntries });
     }
     return rows;
@@ -67,29 +76,57 @@ export function WeeklyView({
 
           {habits.map((habit) => (
             <div key={habit.id} className="contents">
-              <div className="flex items-center border-b border-r border-line px-4 py-2">
+              <div className="flex items-center gap-2 border-b border-r border-line px-4 py-2">
+                <span
+                  className="h-[10px] w-[10px] shrink-0 rounded-full"
+                  style={{ backgroundColor: habitColor(habit.color).base }}
+                  aria-hidden="true"
+                />
                 <span className="truncate text-[14.5px] font-medium text-ink">{habit.name}</span>
               </div>
               {days.map((date) => {
                 const entry = entryMap[habit.id]?.[date];
-                const completed = Boolean(entry?.completed);
+                const color = habitColor(habit.color);
+                const progress = dayProgress(entry, subtasksByHabit[habit.id] ?? []);
+                const pct = Math.round(progress.fraction * 100);
                 return (
                   <button
                     key={date}
                     type="button"
                     onClick={() => onOpenCell(habit.id, date)}
                     aria-label={`${habit.name}, ${formatLongDate(date)}. ${
-                      completed ? "Completed" : "Not completed"
+                      progress.complete
+                        ? "Completed"
+                        : progress.total > 0 && progress.done > 0
+                          ? `${progress.done} of ${progress.total} subtasks done`
+                          : "Not completed"
                     }.`}
-                    aria-pressed={completed}
-                    className={`flex h-12 items-center justify-center border-b border-r border-line transition-colors duration-150 ${
-                      completed ? "bg-accent-soft hover:bg-[#eed8cd]" : "hover:bg-sunken"
-                    }`}
+                    aria-pressed={progress.complete}
+                    className="relative flex h-12 items-center justify-center border-b border-r border-line transition-colors duration-150 hover:bg-sunken"
+                    style={
+                      progress.fraction >= 1
+                        ? { backgroundColor: color.soft }
+                        : progress.fraction > 0
+                          ? {
+                              background: `linear-gradient(to top, ${color.soft} ${pct}%, ${color.tint} ${pct}%)`,
+                            }
+                          : undefined
+                    }
                   >
-                    {completed ? (
-                      <CheckIcon className="h-[18px] w-[18px] text-accent" />
+                    {progress.complete ? (
+                      <CheckIcon className="h-[18px] w-[18px]" style={{ color: color.base }} />
+                    ) : progress.done > 0 ? (
+                      <span
+                        className="tabular text-[12.5px] font-semibold"
+                        style={{ color: color.base }}
+                      >
+                        {progress.done}/{progress.total}
+                      </span>
                     ) : (
-                      <span className="h-[7px] w-[7px] rounded-full bg-line-strong/70" aria-hidden="true" />
+                      <span
+                        className="h-[7px] w-[7px] rounded-full bg-line-strong/70"
+                        aria-hidden="true"
+                      />
                     )}
                   </button>
                 );

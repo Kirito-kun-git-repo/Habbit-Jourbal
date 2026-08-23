@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { Habit } from "@/lib/data";
+import type { Habit, Subtask } from "@/lib/data";
+import { habitColor } from "@/lib/colors";
 import type { EntryMap } from "@/lib/hooks/useHabitData";
 import { dayOfMonth, isWeekend, today, weekdayShort, type ISODate } from "@/lib/dates";
 import { HabitCell, type GridMode } from "./HabitCell";
@@ -14,12 +15,14 @@ export function CalendarGrid({
   habits,
   days,
   entryMap,
+  subtasksByHabit,
   mode,
   onOpenCell,
 }: {
   habits: Habit[];
   days: ISODate[];
   entryMap: EntryMap;
+  subtasksByHabit: Record<string, Subtask[]>;
   mode: GridMode;
   onOpenCell: (habitId: string, date: ISODate) => void;
 }) {
@@ -83,6 +86,11 @@ export function CalendarGrid({
               mode === "detailed" ? "items-start pt-3" : "items-center"
             }`}
           >
+            <span
+              className="mr-2 mt-[3px] h-[10px] w-[10px] shrink-0 rounded-full"
+              style={{ backgroundColor: habitColor(habit.color).base }}
+              aria-hidden="true"
+            />
             <span className="truncate text-[14.5px] font-medium text-ink" title={habit.name}>
               {habit.name}
             </span>
@@ -92,6 +100,8 @@ export function CalendarGrid({
               key={date}
               habitId={habit.id}
               habitName={habit.name}
+              colorKey={habit.color}
+              subtasks={subtasksByHabit[habit.id] ?? []}
               date={date}
               entry={entryMap[habit.id]?.[date]}
               mode={mode}

@@ -1,3 +1,4 @@
+import type { HabitColorKey } from "@/lib/colors";
 import type { ISODate } from "@/lib/dates";
 
 export type Habit = {
@@ -6,6 +7,17 @@ export type Habit = {
   name: string;
   position: number;
   is_active: boolean;
+  color: HabitColorKey;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Subtask = {
+  id: string;
+  habit_id: string;
+  user_id: string;
+  name: string;
+  position: number;
   created_at: string;
   updated_at: string;
 };
@@ -16,6 +28,7 @@ export type HabitEntry = {
   user_id: string;
   date: ISODate;
   completed: boolean;
+  completed_subtasks: string[];
   note: string | null;
   photo_path: string | null;
   created_at: string;
@@ -26,6 +39,7 @@ export type EntryDraft = {
   habit_id: string;
   date: ISODate;
   completed: boolean;
+  completed_subtasks: string[];
   note: string | null;
   photo_path: string | null;
 };
@@ -46,10 +60,16 @@ export interface HabitStore {
   signOut(): Promise<void>;
 
   listHabits(): Promise<Habit[]>;
-  createHabit(name: string): Promise<Habit>;
+  createHabit(name: string, color: HabitColorKey): Promise<Habit>;
   renameHabit(id: string, name: string): Promise<void>;
+  recolorHabit(id: string, color: HabitColorKey): Promise<void>;
   deleteHabit(id: string): Promise<void>;
   reorderHabits(orderedIds: string[]): Promise<void>;
+
+  listSubtasks(): Promise<Subtask[]>;
+  createSubtask(habitId: string, name: string): Promise<Subtask>;
+  renameSubtask(id: string, name: string): Promise<void>;
+  deleteSubtask(id: string): Promise<void>;
 
   listEntries(from: ISODate, to: ISODate): Promise<HabitEntry[]>;
   listAllEntries(): Promise<HabitEntry[]>;

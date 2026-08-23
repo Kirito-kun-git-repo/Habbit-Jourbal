@@ -3,6 +3,27 @@
 A habit tracker that remembers what actually happened. Rows are habits, columns
 are days, and any completion can carry a photo and a note.
 
+## Habits, subtasks, and colour
+
+A habit can hold **subtasks**. Each one is worth an equal share of that day, so
+a Workout with `Warm up / Main lift / Stretch` sits at 67% once two are ticked.
+A habit with no subtasks stays a single tick.
+
+- The grid shows a part-finished day as `2/3` over a bar that fills from the
+  bottom by the same fraction.
+- The Consistency percentage gives **fractional credit** — half-done all month
+  reads as 50%.
+- **Streaks stay binary**: a day counts only when every subtask is done.
+- Adding a subtask re-scores history against the habit as it exists now, so a
+  previously complete day becomes partial. Deleting one does the reverse; ids
+  left behind by a deleted subtask are ignored rather than stored forever.
+
+Each habit also picks a **colour** from a curated palette of eight muted
+swatches (`src/lib/colors.ts`). Habits store the palette key, not a hex value,
+so the grid can't be filled with colours that fight the page background. The
+colour carries through the grid, weekly view, journal cards, consistency bars,
+and the entry drawer.
+
 ## Views
 
 - **Grid** — the month, one row per habit. Sticky habit names, sticky dates.

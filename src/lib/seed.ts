@@ -4,9 +4,16 @@
  * builds — the entry point is guarded by NODE_ENV in the UI.
  */
 import { store } from "@/lib/data";
+import { HABIT_COLOR_KEYS } from "@/lib/colors";
 import { addDays, today } from "@/lib/dates";
 
 const HABITS = ["Workout", "Read", "Study DSA", "Drink water", "Meditation", "Sleep before 11 PM"];
+
+// A couple of habits get subtasks so partial days show up in the grid.
+const SUBTASKS: Record<string, string[]> = {
+  Workout: ["Warm up", "Main lift", "Stretch"],
+  "Study DSA": ["Review notes", "Solve two problems"],
+};
 
 // Rough weekly rhythms — how likely each habit is to get done, by weekday.
 const CADENCE: Record<string, number[]> = {
@@ -72,7 +79,17 @@ function rand(seed: number) {
 }
 
 export async function seedDemoData(days = 38) {
-  const habits = await Promise.all(HABITS.map((name) => store.createHabit(name)));
+  const habits = await Promise.all(
+    HABITS.map((name, i) => store.createHabit(name, HABIT_COLOR_KEYS[i % HABIT_COLOR_KEYS.length])),
+  );
+
+  const subtasksByHabit: Record<string, string[]> = {};
+  for (const habit of habits) {
+    const names = SUBTASKS[habit.name] ?? [];
+    const created = [];
+    for (const name of names) created.push(await store.createSubtask(habit.id, name));
+    subtasksByHabit[habit.id] = created.map((s) => s.id);
+  }
   const start = addDays(today(), -(days - 1));
   let photoBudget = 6;
   let seed = 1;
@@ -97,10 +114,19 @@ export async function seedDemoData(days = 38) {
         photoPath = await store.uploadPhoto(file, habit.id, date);
       }
 
+      // Habits with subtasks land on a partial day now and then.
+      const subtaskIds = subtasksByHabit[habit.id] ?? [];
+      let doneSubtasks = subtaskIds;
+      if (subtaskIds.length > 0 && rand(seed + 1.4) < 0.35) {
+        const keep = 1 + Math.floor(rand(seed + 1.7) * (subtaskIds.length - 1));
+        doneSubtasks = subtaskIds.slice(0, keep);
+      }
+
       await store.upsertEntry({
         habit_id: habit.id,
         date,
-        completed: true,
+        completed: subtaskIds.length === 0 || doneSubtasks.length === subtaskIds.length,
+        completed_subtasks: doneSubtasks,
         note: wantsNote ? noteOptions[Math.floor(rand(seed + 0.9) * noteOptions.length)] : null,
         photo_path: photoPath,
       });

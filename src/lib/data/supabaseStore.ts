@@ -1,3 +1,4 @@
+import type { HabitColorKey } from "@/lib/colors";
 import { supabaseClient } from "@/lib/supabase/client";
 import type { ISODate } from "@/lib/dates";
 import {
@@ -6,6 +7,7 @@ import {
   type Habit,
   type HabitEntry,
   type HabitStore,
+  type Subtask,
 } from "./types";
 
 const BUCKET = "habit-photos";
@@ -56,13 +58,13 @@ export const supabaseStore: HabitStore = {
     return (data ?? []) as Habit[];
   },
 
-  async createHabit(name) {
+  async createHabit(name, color: HabitColorKey) {
     const userId = await requireUserId();
     const existing = await this.listHabits();
     const position = existing.reduce((max, h) => Math.max(max, h.position), -1) + 1;
     const { data, error } = await supabaseClient()
       .from("habits")
-      .insert({ user_id: userId, name, position })
+      .insert({ user_id: userId, name, position, color })
       .select()
       .single();
     if (error || !data) fail("Could not add the habit", error);
@@ -72,6 +74,47 @@ export const supabaseStore: HabitStore = {
   async renameHabit(id, name) {
     const { error } = await supabaseClient().from("habits").update({ name }).eq("id", id);
     if (error) fail("Could not rename the habit", error);
+  },
+
+  async recolorHabit(id, color: HabitColorKey) {
+    const { error } = await supabaseClient().from("habits").update({ color }).eq("id", id);
+    if (error) fail("Could not change the colour", error);
+  },
+
+  async listSubtasks() {
+    const { data, error } = await supabaseClient()
+      .from("habit_subtasks")
+      .select("*")
+      .order("position", { ascending: true });
+    if (error) fail("Could not load subtasks", error);
+    return (data ?? []) as Subtask[];
+  },
+
+  async createSubtask(habitId, name) {
+    const userId = await requireUserId();
+    const { data: siblings } = await supabaseClient()
+      .from("habit_subtasks")
+      .select("position")
+      .eq("habit_id", habitId);
+    const positions = ((siblings ?? []) as { position: number }[]).map((s) => s.position);
+    const position = positions.reduce((max, n) => Math.max(max, n), -1) + 1;
+    const { data, error } = await supabaseClient()
+      .from("habit_subtasks")
+      .insert({ habit_id: habitId, user_id: userId, name, position })
+      .select()
+      .single();
+    if (error || !data) fail("Could not add the subtask", error);
+    return data as Subtask;
+  },
+
+  async renameSubtask(id, name) {
+    const { error } = await supabaseClient().from("habit_subtasks").update({ name }).eq("id", id);
+    if (error) fail("Could not rename the subtask", error);
+  },
+
+  async deleteSubtask(id) {
+    const { error } = await supabaseClient().from("habit_subtasks").delete().eq("id", id);
+    if (error) fail("Could not delete the subtask", error);
   },
 
   async deleteHabit(id) {

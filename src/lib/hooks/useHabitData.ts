@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { store, type EntryDraft, type Habit, type HabitEntry } from "@/lib/data";
+import { store, type EntryDraft, type Habit, type HabitEntry, type Subtask } from "@/lib/data";
+import { nextColorForPosition, type HabitColorKey } from "@/lib/colors";
 import type { ISODate } from "@/lib/dates";
 
 export type EntryMap = Record<string, Record<ISODate, HabitEntry>>;
@@ -27,6 +28,7 @@ function errorMessage(error: unknown, fallback: string) {
  */
 export function useHabitData(onError: (message: string) => void) {
   const [habits, setHabits] = useState<Habit[]>([]);
+  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [entries, setEntries] = useState<Record<string, HabitEntry>>({});
   const [loading, setLoading] = useState(true);
   const loadedAll = useRef(false);
@@ -50,9 +52,14 @@ export function useHabitData(onError: (message: string) => void) {
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      const [nextHabits, allEntries] = await Promise.all([store.listHabits(), store.listAllEntries()]);
+      const [nextHabits, nextSubtasks, allEntries] = await Promise.all([
+        store.listHabits(),
+        store.listSubtasks(),
+        store.listAllEntries(),
+      ]);
       loadedAll.current = true;
       setHabits(nextHabits);
+      setSubtasks(nextSubtasks);
       setEntries(Object.fromEntries(allEntries.map((e) => [key(e.habit_id, e.date), e])));
     } catch (error) {
       onError(errorMessage(error, "Could not load your journal."));
@@ -142,15 +149,74 @@ export function useHabitData(onError: (message: string) => void) {
   );
 
   const addHabit = useCallback(
-    async (name: string) => {
+    async (name: string, color?: HabitColorKey) => {
       try {
-        const habit = await store.createHabit(name.trim());
+        const habit = await store.createHabit(
+          name.trim(),
+          color ?? nextColorForPosition(habits.length),
+        );
         setHabits((current) => [...current, habit]);
+        return habit;
       } catch (error) {
         onError(errorMessage(error, "Could not add the habit."));
+        return null;
+      }
+    },
+    [habits.length, onError],
+  );
+
+  const recolorHabit = useCallback(
+    async (id: string, color: HabitColorKey) => {
+      const previous = habits;
+      setHabits((current) => current.map((h) => (h.id === id ? { ...h, color } : h)));
+      try {
+        await store.recolorHabit(id, color);
+      } catch (error) {
+        setHabits(previous);
+        onError(errorMessage(error, "Could not change the colour."));
+      }
+    },
+    [habits, onError],
+  );
+
+  const addSubtask = useCallback(
+    async (habitId: string, name: string) => {
+      try {
+        const subtask = await store.createSubtask(habitId, name.trim());
+        setSubtasks((current) => [...current, subtask]);
+      } catch (error) {
+        onError(errorMessage(error, "Could not add the subtask."));
       }
     },
     [onError],
+  );
+
+  const renameSubtask = useCallback(
+    async (id: string, name: string) => {
+      const previous = subtasks;
+      setSubtasks((current) => current.map((s) => (s.id === id ? { ...s, name } : s)));
+      try {
+        await store.renameSubtask(id, name.trim());
+      } catch (error) {
+        setSubtasks(previous);
+        onError(errorMessage(error, "Could not rename the subtask."));
+      }
+    },
+    [onError, subtasks],
+  );
+
+  const deleteSubtask = useCallback(
+    async (id: string) => {
+      const previous = subtasks;
+      setSubtasks((current) => current.filter((s) => s.id !== id));
+      try {
+        await store.deleteSubtask(id);
+      } catch (error) {
+        setSubtasks(previous);
+        onError(errorMessage(error, "Could not delete the subtask."));
+      }
+    },
+    [onError, subtasks],
   );
 
   const renameHabit = useCallback(
@@ -171,7 +237,9 @@ export function useHabitData(onError: (message: string) => void) {
     async (id: string) => {
       const previousHabits = habits;
       const previousEntries = entries;
+      const previousSubtasks = subtasks;
       setHabits((current) => current.filter((h) => h.id !== id));
+      setSubtasks((current) => current.filter((s) => s.habit_id !== id));
       setEntries((current) =>
         Object.fromEntries(Object.entries(current).filter(([, e]) => e.habit_id !== id)),
       );
@@ -179,11 +247,12 @@ export function useHabitData(onError: (message: string) => void) {
         await store.deleteHabit(id);
       } catch (error) {
         setHabits(previousHabits);
+        setSubtasks(previousSubtasks);
         setEntries(previousEntries);
         onError(errorMessage(error, "Could not delete the habit."));
       }
     },
-    [entries, habits, onError],
+    [entries, habits, onError, subtasks],
   );
 
   const moveHabit = useCallback(
@@ -207,8 +276,19 @@ export function useHabitData(onError: (message: string) => void) {
 
   const entryList = useMemo(() => Object.values(entries), [entries]);
 
+  /** subtasksByHabit[habitId] — ordered, so the grid and dialog agree. */
+  const subtasksByHabit = useMemo(() => {
+    const map: Record<string, Subtask[]> = {};
+    for (const subtask of [...subtasks].sort((a, b) => a.position - b.position)) {
+      (map[subtask.habit_id] ??= []).push(subtask);
+    }
+    return map;
+  }, [subtasks]);
+
   return {
     habits,
+    subtasks,
+    subtasksByHabit,
     entryMap,
     entryList,
     loading,
@@ -218,8 +298,12 @@ export function useHabitData(onError: (message: string) => void) {
     removeEntry,
     addHabit,
     renameHabit,
+    recolorHabit,
     deleteHabit,
     moveHabit,
+    addSubtask,
+    renameSubtask,
+    deleteSubtask,
     reload,
   };
 }

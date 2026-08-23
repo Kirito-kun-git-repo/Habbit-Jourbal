@@ -146,6 +146,7 @@ export function HabitTracker({ user, onSignedOut }: { user: SessionUser; onSigne
             habits={data.habits}
             days={days}
             entryMap={data.entryMap}
+            subtasksByHabit={data.subtasksByHabit}
             mode={gridMode}
             onOpenCell={openCell}
           />
@@ -156,6 +157,7 @@ export function HabitTracker({ user, onSignedOut }: { user: SessionUser; onSigne
             habits={data.habits}
             weekStartISO={weekStartISO}
             entryMap={data.entryMap}
+            subtasksByHabit={data.subtasksByHabit}
             onOpenCell={openCell}
           />
         ) : (
@@ -163,6 +165,7 @@ export function HabitTracker({ user, onSignedOut }: { user: SessionUser; onSigne
             habits={data.habits}
             monthDaysISO={days}
             entries={data.entryList}
+            subtasksByHabit={data.subtasksByHabit}
             year={year}
             month={month}
           />
@@ -174,6 +177,7 @@ export function HabitTracker({ user, onSignedOut }: { user: SessionUser; onSigne
           key={`${target.habit.id}|${target.date}`}
           target={target}
           entry={data.getEntry(target.habit.id, target.date)}
+          subtasks={data.subtasksByHabit[target.habit.id] ?? []}
           onClose={() => setTarget(null)}
           onSave={data.saveEntry}
           onDelete={data.removeEntry}
@@ -183,11 +187,16 @@ export function HabitTracker({ user, onSignedOut }: { user: SessionUser; onSigne
       <HabitManager
         open={managerOpen}
         habits={data.habits}
+        subtasksByHabit={data.subtasksByHabit}
         onClose={() => setManagerOpen(false)}
         onAdd={data.addHabit}
         onRename={data.renameHabit}
+        onRecolor={data.recolorHabit}
         onDelete={data.deleteHabit}
         onMove={data.moveHabit}
+        onAddSubtask={data.addSubtask}
+        onRenameSubtask={data.renameSubtask}
+        onDeleteSubtask={data.deleteSubtask}
       />
     </div>
   );

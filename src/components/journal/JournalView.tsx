@@ -3,9 +3,10 @@
 import { useMemo, useState } from "react";
 import { EntryPhoto } from "@/components/entries/EntryPhoto";
 import type { Habit, HabitEntry } from "@/lib/data";
+import { habitColor } from "@/lib/colors";
 import { formatLongDate, type ISODate } from "@/lib/dates";
 
-export type JournalEntry = HabitEntry & { habitName: string };
+export type JournalEntry = HabitEntry & { habitName: string; habitColor: string };
 
 /** An entry worth reading has something to read: a note or a photo. */
 export function hasContent(entry: HabitEntry): boolean {
@@ -25,6 +26,7 @@ export function JournalView({
 
   const grouped = useMemo(() => {
     const names = new Map(habits.map((h) => [h.id, h.name]));
+    const colors = new Map(habits.map((h) => [h.id, h.color as string]));
     const relevant = entries
       .filter((entry) => hasContent(entry) || entry.completed)
       .filter((entry) => habitFilter === "all" || entry.habit_id === habitFilter)
@@ -37,7 +39,8 @@ export function JournalView({
     for (const entry of relevant) {
       const day = byDate.get(entry.date) ?? { written: [], alsoDone: [] };
       const habitName = names.get(entry.habit_id) ?? "";
-      if (hasContent(entry)) day.written.push({ ...entry, habitName });
+      const habitColorKey = colors.get(entry.habit_id) ?? "";
+      if (hasContent(entry)) day.written.push({ ...entry, habitName, habitColor: habitColorKey });
       else day.alsoDone.push(habitName);
       byDate.set(entry.date, day);
     }
@@ -122,7 +125,14 @@ export function JournalCard({
       className="w-full rounded-sm border border-line bg-surface p-4 text-left transition-colors duration-150 hover:border-line-strong hover:bg-accent-tint/40"
     >
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-[15px] font-medium text-ink">{entry.habitName}</span>
+        <span className="flex items-center gap-2 text-[15px] font-medium text-ink">
+          <span
+            className="h-[9px] w-[9px] shrink-0 rounded-full"
+            style={{ backgroundColor: habitColor(entry.habitColor).base }}
+            aria-hidden="true"
+          />
+          {entry.habitName}
+        </span>
         <span className="shrink-0 text-[13px] text-muted">
           {entry.completed ? "Completed" : "Logged"}
         </span>
