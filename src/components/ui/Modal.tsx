@@ -77,7 +77,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
-        className="anim-rise relative flex max-h-[92vh] w-full flex-col overflow-y-auto rounded-t-md border border-line bg-surface shadow-[0_-4px_24px_rgba(38,35,31,0.1)] sm:anim-slide sm:max-h-none sm:h-full sm:w-[420px] sm:rounded-none sm:border-y-0 sm:border-r-0 sm:shadow-[-4px_0_24px_rgba(38,35,31,0.08)] quiet-scroll"
+        className="anim-rise relative flex max-h-[92vh] w-full flex-col overflow-y-auto rounded-t-md border border-line bg-surface shadow-[0_-4px_24px_rgba(38,35,31,0.1)] sm:anim-slide sm:max-h-none sm:h-full sm:w-[460px] sm:rounded-none sm:border-y-0 sm:border-r-0 sm:shadow-[-4px_0_24px_rgba(38,35,31,0.08)] quiet-scroll"
       >
         {children}
       </div>

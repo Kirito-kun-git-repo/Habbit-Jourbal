@@ -103,7 +103,7 @@ export function HabitManager({
                 kind="habits"
                 label="the new habit"
                 color={newColor}
-                size={38}
+                size={46}
                 onChange={setNewImage}
               />
               <input
@@ -140,7 +140,7 @@ export function HabitManager({
                       kind="habits"
                       label={habit.name}
                       color={color}
-                      size={30}
+                      size={42}
                       onChange={(path) => onSetHabitImage(habit.id, path)}
                     />
 
@@ -316,7 +316,7 @@ function SubtaskEditor({
                 kind="subtasks"
                 label={subtask.name}
                 color={color}
-                size={26}
+                size={40}
                 onChange={(path) => onSetImage(subtask.id, path)}
               />
               {editingId === subtask.id ? (
@@ -370,7 +370,7 @@ function SubtaskEditor({
           kind="subtasks"
           label="the new subtask"
           color={color}
-          size={30}
+          size={40}
           onChange={setImage}
         />
         <input

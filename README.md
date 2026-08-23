@@ -36,10 +36,14 @@ Two different kinds, deliberately:
 
 - **Identity pictures** — one per habit and one per subtask, set in the Habits
   panel (you can attach one to a new habit *before* it exists; the upload
-  returns a path and the create call carries it). These show wherever the habit
-  is named: grid, weekly, journal, consistency, and the entry drawer's subtask
-  checklist. Without one, the habit's colour dot stands in — same footprint, so
-  rows stay aligned.
+  returns a path and the create call carries it). Without one, the habit's
+  colour dot stands in — same footprint, so rows stay aligned.
+
+  Sizes are chosen so a picture reads as a picture: 40px in the compact grid
+  (56px rows) and 64px in the detailed grid, 44px on the drawer header. Subtask
+  pictures fill the drawer at their **own aspect ratio** — no fixed 4:3 box, so
+  a 9:16 portrait isn't letterboxed — capped at 360px tall. Tapping any of them
+  opens a full-screen `contain` view.
 - **Day photos** — the existing one-per-entry photo on `habit_entries`,
   attached in the drawer as evidence of a particular day.
 

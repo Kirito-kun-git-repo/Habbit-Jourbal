@@ -7,6 +7,8 @@ import { CheckIcon, CloseIcon } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/Toast";
 import { store, type EntryDraft, type Habit, type HabitEntry, type Subtask } from "@/lib/data";
 import { HabitBadge } from "@/components/habits/HabitBadge";
+import { EntryPhoto } from "@/components/entries/EntryPhoto";
+import { Lightbox } from "@/components/ui/Lightbox";
 import { habitColor } from "@/lib/colors";
 import { formatLongDate, type ISODate } from "@/lib/dates";
 import { derivedCompleted } from "@/lib/progress";
@@ -50,6 +52,7 @@ export function EntryDialog({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [zoom, setZoom] = useState<{ path: string; caption: string } | null>(null);
 
   // Objects uploaded during this session that aren't referenced by a saved
   // entry yet — cleaned up on close, or replaced on save.
@@ -176,7 +179,17 @@ export function EntryDialog({
               id={titleId}
               className="flex items-center gap-2 text-[17px] font-semibold tracking-[-0.015em] text-ink"
             >
-              <HabitBadge imagePath={habit.image_path} color={color} size={26} />
+              <HabitBadge
+                imagePath={habit.image_path}
+                color={color}
+                size={44}
+                label={habit.name}
+                onClick={
+                  habit.image_path
+                    ? () => setZoom({ path: habit.image_path!, caption: habit.name })
+                    : undefined
+                }
+              />
               {habit.name}
             </h2>
             <p className="text-[14px] text-muted">{formatLongDate(date)}</p>
@@ -221,39 +234,63 @@ export function EntryDialog({
                 />
               </div>
 
-              <ul className="divide-y divide-line rounded-sm border border-line-strong">
+              <ul className="space-y-2.5">
                 {subtasks.map((subtask) => {
                   const done = doneSubtasks.includes(subtask.id);
                   return (
-                    <li key={subtask.id}>
+                    <li
+                      key={subtask.id}
+                      className="overflow-hidden rounded-sm border transition-colors duration-150"
+                      style={{
+                        borderColor: done ? color : "var(--color-line-strong)",
+                        backgroundColor: done
+                          ? `color-mix(in srgb, ${color} 10%, var(--color-surface))`
+                          : "var(--color-surface)",
+                      }}
+                    >
+                      {subtask.image_path && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setZoom({ path: subtask.image_path!, caption: subtask.name })
+                          }
+                          title={`View ${subtask.name} full size`}
+                          aria-label={`View the image for ${subtask.name} full size`}
+                          className="flex w-full cursor-zoom-in items-center justify-center bg-sunken p-1"
+                        >
+                          {/* No fixed aspect box: the picture keeps its own shape,
+                              so a 9:16 portrait isn't letterboxed into a 4:3 slot.
+                              Capped by height so a tall one can't run off. */}
+                          <EntryPhoto
+                            path={subtask.image_path}
+                            alt={subtask.name}
+                            fit="contain"
+                            className="max-h-[360px] w-auto max-w-full"
+                          />
+                        </button>
+                      )}
+
                       <button
                         type="button"
                         role="checkbox"
                         aria-checked={done}
                         onClick={() => toggleSubtask(subtask.id)}
-                        className="flex w-full items-center gap-3 px-3.5 py-2.5 text-left transition-colors duration-150"
-                        style={done ? { backgroundColor: `color-mix(in srgb, ${color} 12%, var(--color-surface))` } : undefined}
+                        className="flex w-full items-center gap-3 px-3.5 py-3 text-left"
                       >
                         <span
-                          className="flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-xs border transition-colors duration-150"
+                          className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-xs border transition-colors duration-150"
                           style={
                             done
                               ? { borderColor: color, backgroundColor: color, color: "#fff" }
-                              : { borderColor: "var(--color-line-strong)", backgroundColor: "#fff" }
+                              : {
+                                  borderColor: "var(--color-line-strong)",
+                                  backgroundColor: "var(--color-surface)",
+                                }
                           }
                         >
-                          {done && <CheckIcon className="anim-mark h-[14px] w-[14px]" />}
+                          {done && <CheckIcon className="anim-mark h-[15px] w-[15px]" />}
                         </span>
-                        {subtask.image_path && (
-                          <HabitBadge
-                            imagePath={subtask.image_path}
-                            color={color}
-                            size={26}
-                          />
-                        )}
-                        <span
-                          className={`text-[15px] ${done ? "text-ink" : "text-ink-soft"}`}
-                        >
+                        <span className={`text-[15px] ${done ? "text-ink" : "text-ink-soft"}`}>
                           {subtask.name}
                         </span>
                       </button>
@@ -331,6 +368,11 @@ export function EntryDialog({
           )}
         </div>
       </div>
+      <Lightbox
+        path={zoom?.path ?? null}
+        caption={zoom?.caption ?? ""}
+        onClose={() => setZoom(null)}
+      />
     </Modal>
   );
 }

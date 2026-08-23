@@ -28,6 +28,9 @@ import { HabitCell, type GridMode } from "./HabitCell";
 // cells only need to be comfortably clickable.
 const DAY_COL: Record<GridMode, number> = { compact: 38, detailed: 148 };
 
+// The habit thumbnail: big enough to read as the photo you uploaded.
+const BADGE: Record<GridMode, number> = { compact: 40, detailed: 64 };
+
 /** How close to an edge before we ask for more days. */
 const EDGE_PX = 900;
 
@@ -190,7 +193,7 @@ export const CalendarGrid = forwardRef<GridApi, Props>(function CalendarGrid(
       onClickCapture={onClickCapture}
     >
       <div
-        className="grid min-w-full border-t border-line [--habit-col:132px] sm:[--habit-col:176px]"
+        className="grid min-w-full border-t border-line [--habit-col:148px] sm:[--habit-col:208px]"
         style={{
           gridTemplateColumns: `var(--habit-col) repeat(${days.length}, minmax(${minDayCol}px, 1fr))`,
           minWidth: `calc(var(--habit-col) + ${days.length * minDayCol}px)`,
@@ -259,8 +262,8 @@ export const CalendarGrid = forwardRef<GridApi, Props>(function CalendarGrid(
               <HabitBadge
                 imagePath={habit.image_path}
                 color={habit.color}
-                size={20}
-                className="mr-2 mt-[2px]"
+                size={BADGE[mode]}
+                className="mr-2.5 mt-[2px]"
               />
               <span className="truncate text-[14.5px] font-medium text-ink" title={habit.name}>
                 {habit.name}
