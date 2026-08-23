@@ -57,13 +57,13 @@ export const supabaseStore: HabitStore = {
     return (data ?? []) as Habit[];
   },
 
-  async createHabit(name, color: string) {
+  async createHabit(name, color: string, imagePath: string | null = null) {
     const userId = await requireUserId();
     const existing = await this.listHabits();
     const position = existing.reduce((max, h) => Math.max(max, h.position), -1) + 1;
     const { data, error } = await supabaseClient()
       .from("habits")
-      .insert({ user_id: userId, name, position, color })
+      .insert({ user_id: userId, name, position, color, image_path: imagePath })
       .select()
       .single();
     if (error || !data) fail("Could not add the habit", error);
@@ -80,6 +80,14 @@ export const supabaseStore: HabitStore = {
     if (error) fail("Could not change the colour", error);
   },
 
+  async setHabitImage(id, path) {
+    const { error } = await supabaseClient()
+      .from("habits")
+      .update({ image_path: path })
+      .eq("id", id);
+    if (error) fail("Could not update the habit image", error);
+  },
+
   async listSubtasks() {
     const { data, error } = await supabaseClient()
       .from("habit_subtasks")
@@ -89,7 +97,7 @@ export const supabaseStore: HabitStore = {
     return (data ?? []) as Subtask[];
   },
 
-  async createSubtask(habitId, name) {
+  async createSubtask(habitId, name, imagePath: string | null = null) {
     const userId = await requireUserId();
     const { data: siblings } = await supabaseClient()
       .from("habit_subtasks")
@@ -99,7 +107,7 @@ export const supabaseStore: HabitStore = {
     const position = positions.reduce((max, n) => Math.max(max, n), -1) + 1;
     const { data, error } = await supabaseClient()
       .from("habit_subtasks")
-      .insert({ habit_id: habitId, user_id: userId, name, position })
+      .insert({ habit_id: habitId, user_id: userId, name, position, image_path: imagePath })
       .select()
       .single();
     if (error || !data) fail("Could not add the subtask", error);
@@ -109,6 +117,14 @@ export const supabaseStore: HabitStore = {
   async renameSubtask(id, name) {
     const { error } = await supabaseClient().from("habit_subtasks").update({ name }).eq("id", id);
     if (error) fail("Could not rename the subtask", error);
+  },
+
+  async setSubtaskImage(id, path) {
+    const { error } = await supabaseClient()
+      .from("habit_subtasks")
+      .update({ image_path: path })
+      .eq("id", id);
+    if (error) fail("Could not update the subtask image", error);
   },
 
   async deleteSubtask(id) {
@@ -178,6 +194,17 @@ export const supabaseStore: HabitStore = {
       .storage.from(BUCKET)
       .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
     if (error) fail("Photo upload failed", error);
+    return path;
+  },
+
+  async uploadIcon(file, kind) {
+    const userId = await requireUserId();
+    const ext = (file.name.split(".").pop() ?? "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const path = `${userId}/${kind}/${crypto.randomUUID()}.${ext || "jpg"}`;
+    const { error } = await supabaseClient()
+      .storage.from(BUCKET)
+      .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
+    if (error) fail("Image upload failed", error);
     return path;
   },
 

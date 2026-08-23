@@ -6,6 +6,7 @@ import { Modal } from "@/components/ui/Modal";
 import { CheckIcon, CloseIcon } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/Toast";
 import { store, type EntryDraft, type Habit, type HabitEntry, type Subtask } from "@/lib/data";
+import { HabitBadge } from "@/components/habits/HabitBadge";
 import { habitColor } from "@/lib/colors";
 import { formatLongDate, type ISODate } from "@/lib/dates";
 import { derivedCompleted } from "@/lib/progress";
@@ -175,11 +176,7 @@ export function EntryDialog({
               id={titleId}
               className="flex items-center gap-2 text-[17px] font-semibold tracking-[-0.015em] text-ink"
             >
-              <span
-                className="h-[10px] w-[10px] shrink-0 rounded-full"
-                style={{ backgroundColor: color }}
-                aria-hidden="true"
-              />
+              <HabitBadge imagePath={habit.image_path} color={color} size={26} />
               {habit.name}
             </h2>
             <p className="text-[14px] text-muted">{formatLongDate(date)}</p>
@@ -247,6 +244,13 @@ export function EntryDialog({
                         >
                           {done && <CheckIcon className="anim-mark h-[14px] w-[14px]" />}
                         </span>
+                        {subtask.image_path && (
+                          <HabitBadge
+                            imagePath={subtask.image_path}
+                            color={color}
+                            size={26}
+                          />
+                        )}
                         <span
                           className={`text-[15px] ${done ? "text-ink" : "text-ink-soft"}`}
                         >

@@ -30,6 +30,24 @@ Habit colours are a single hex each. The lighter tones a cell needs are mixed in
 CSS with `color-mix()` against the current surface, so one habit colour reads
 correctly in every theme without being recomputed.
 
+## Pictures
+
+Two different kinds, deliberately:
+
+- **Identity pictures** — one per habit and one per subtask, set in the Habits
+  panel (you can attach one to a new habit *before* it exists; the upload
+  returns a path and the create call carries it). These show wherever the habit
+  is named: grid, weekly, journal, consistency, and the entry drawer's subtask
+  checklist. Without one, the habit's colour dot stands in — same footprint, so
+  rows stay aligned.
+- **Day photos** — the existing one-per-entry photo on `habit_entries`,
+  attached in the drawer as evidence of a particular day.
+
+All of them live in the same private `habit-photos` bucket, keyed by user id in
+the first path segment, so the storage policies already cover them. Replacing or
+deleting an identity picture removes the old object; deleting a habit clears its
+own picture and its subtasks' too, since a DB cascade doesn't reach storage.
+
 ## Habits, subtasks, and colour
 
 A habit can hold **subtasks**. Each one is worth an equal share of that day, so

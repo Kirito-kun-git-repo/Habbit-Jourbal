@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import type { Habit, HabitEntry, Subtask } from "@/lib/data";
+import { HabitBadge } from "@/components/habits/HabitBadge";
 import { habitColor } from "@/lib/colors";
 import { dayOfMonth, formatMonth, today, type ISODate } from "@/lib/dates";
 import { dayProgress } from "@/lib/progress";
@@ -76,11 +77,7 @@ export function ConsistencyView({
             <li key={habit.id} className="py-5">
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                 <h3 className="flex items-center gap-2 text-[15.5px] font-medium text-ink">
-                  <span
-                    className="h-[10px] w-[10px] shrink-0 rounded-full"
-                    style={{ backgroundColor: color }}
-                    aria-hidden="true"
-                  />
+                  <HabitBadge imagePath={habit.image_path} color={color} size={20} />
                   {habit.name}
                   {subtasks.length > 0 && (
                     <span className="text-[13px] font-normal text-muted">

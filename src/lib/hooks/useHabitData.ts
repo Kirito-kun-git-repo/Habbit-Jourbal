@@ -149,11 +149,12 @@ export function useHabitData(onError: (message: string) => void) {
   );
 
   const addHabit = useCallback(
-    async (name: string, color?: string) => {
+    async (name: string, color?: string, imagePath?: string | null) => {
       try {
         const habit = await store.createHabit(
           name.trim(),
           color ?? nextColorForPosition(habits.length),
+          imagePath ?? null,
         );
         setHabits((current) => [...current, habit]);
         return habit;
@@ -179,10 +180,38 @@ export function useHabitData(onError: (message: string) => void) {
     [habits, onError],
   );
 
-  const addSubtask = useCallback(
-    async (habitId: string, name: string) => {
+  const setHabitImage = useCallback(
+    async (id: string, path: string | null) => {
+      const previous = habits;
+      setHabits((current) => current.map((h) => (h.id === id ? { ...h, image_path: path } : h)));
       try {
-        const subtask = await store.createSubtask(habitId, name.trim());
+        await store.setHabitImage(id, path);
+      } catch (error) {
+        setHabits(previous);
+        onError(errorMessage(error, "Could not update the habit image."));
+      }
+    },
+    [habits, onError],
+  );
+
+  const setSubtaskImage = useCallback(
+    async (id: string, path: string | null) => {
+      const previous = subtasks;
+      setSubtasks((current) => current.map((s) => (s.id === id ? { ...s, image_path: path } : s)));
+      try {
+        await store.setSubtaskImage(id, path);
+      } catch (error) {
+        setSubtasks(previous);
+        onError(errorMessage(error, "Could not update the subtask image."));
+      }
+    },
+    [onError, subtasks],
+  );
+
+  const addSubtask = useCallback(
+    async (habitId: string, name: string, imagePath?: string | null) => {
+      try {
+        const subtask = await store.createSubtask(habitId, name.trim(), imagePath ?? null);
         setSubtasks((current) => [...current, subtask]);
       } catch (error) {
         onError(errorMessage(error, "Could not add the subtask."));
@@ -210,6 +239,8 @@ export function useHabitData(onError: (message: string) => void) {
       const previous = subtasks;
       setSubtasks((current) => current.filter((s) => s.id !== id));
       try {
+        const image = previous.find((s) => s.id === id)?.image_path;
+        if (image) await store.removePhoto(image).catch(() => {});
         await store.deleteSubtask(id);
       } catch (error) {
         setSubtasks(previous);
@@ -244,6 +275,12 @@ export function useHabitData(onError: (message: string) => void) {
         Object.fromEntries(Object.entries(current).filter(([, e]) => e.habit_id !== id)),
       );
       try {
+        // Drop the pictures first; the DB cascade won't touch storage.
+        const orphans = [
+          previousHabits.find((h) => h.id === id)?.image_path,
+          ...previousSubtasks.filter((s) => s.habit_id === id).map((s) => s.image_path),
+        ].filter((p): p is string => Boolean(p));
+        await Promise.all(orphans.map((p) => store.removePhoto(p).catch(() => {})));
         await store.deleteHabit(id);
       } catch (error) {
         setHabits(previousHabits);
@@ -299,10 +336,12 @@ export function useHabitData(onError: (message: string) => void) {
     addHabit,
     renameHabit,
     recolorHabit,
+    setHabitImage,
     deleteHabit,
     moveHabit,
     addSubtask,
     renameSubtask,
+    setSubtaskImage,
     deleteSubtask,
     reload,
   };

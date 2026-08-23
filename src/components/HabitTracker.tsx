@@ -258,10 +258,12 @@ export function HabitTracker({ user, onSignedOut }: { user: SessionUser; onSigne
         onAdd={data.addHabit}
         onRename={data.renameHabit}
         onRecolor={data.recolorHabit}
+        onSetHabitImage={data.setHabitImage}
         onDelete={data.deleteHabit}
         onMove={data.moveHabit}
         onAddSubtask={data.addSubtask}
         onRenameSubtask={data.renameSubtask}
+        onSetSubtaskImage={data.setSubtaskImage}
         onDeleteSubtask={data.deleteSubtask}
       />
     </div>

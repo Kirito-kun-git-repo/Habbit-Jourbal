@@ -7,6 +7,8 @@ export type Habit = {
   position: number;
   is_active: boolean;
   color: string;
+  /** Identifying picture for the habit itself, not a per-day photo. */
+  image_path: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -17,6 +19,7 @@ export type Subtask = {
   user_id: string;
   name: string;
   position: number;
+  image_path: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -59,15 +62,17 @@ export interface HabitStore {
   signOut(): Promise<void>;
 
   listHabits(): Promise<Habit[]>;
-  createHabit(name: string, color: string): Promise<Habit>;
+  createHabit(name: string, color: string, imagePath?: string | null): Promise<Habit>;
   renameHabit(id: string, name: string): Promise<void>;
   recolorHabit(id: string, color: string): Promise<void>;
+  setHabitImage(id: string, path: string | null): Promise<void>;
   deleteHabit(id: string): Promise<void>;
   reorderHabits(orderedIds: string[]): Promise<void>;
 
   listSubtasks(): Promise<Subtask[]>;
-  createSubtask(habitId: string, name: string): Promise<Subtask>;
+  createSubtask(habitId: string, name: string, imagePath?: string | null): Promise<Subtask>;
   renameSubtask(id: string, name: string): Promise<void>;
+  setSubtaskImage(id: string, path: string | null): Promise<void>;
   deleteSubtask(id: string): Promise<void>;
 
   listEntries(from: ISODate, to: ISODate): Promise<HabitEntry[]>;
@@ -76,6 +81,8 @@ export interface HabitStore {
   deleteEntry(habitId: string, date: ISODate): Promise<void>;
 
   uploadPhoto(file: File, habitId: string, date: ISODate): Promise<string>;
+  /** Upload an identifying image for a habit or subtask. */
+  uploadIcon(file: File, kind: "habits" | "subtasks"): Promise<string>;
   removePhoto(path: string): Promise<void>;
   photoUrl(path: string): Promise<string | null>;
 }

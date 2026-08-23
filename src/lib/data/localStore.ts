@@ -132,7 +132,7 @@ export const localStore: HabitStore = {
       .sort((a, b) => a.position - b.position);
   },
 
-  async createHabit(name, color: string) {
+  async createHabit(name, color: string, imagePath: string | null = null) {
     const userId = currentUserId();
     const db = read();
     const mine = db.habits.filter((h) => h.user_id === userId);
@@ -141,6 +141,7 @@ export const localStore: HabitStore = {
       user_id: userId,
       name,
       color,
+      image_path: imagePath,
       position: mine.reduce((max, h) => Math.max(max, h.position), -1) + 1,
       is_active: true,
       created_at: now(),
@@ -171,6 +172,16 @@ export const localStore: HabitStore = {
     write(db);
   },
 
+  async setHabitImage(id, path) {
+    const userId = currentUserId();
+    const db = read();
+    const habit = db.habits.find((h) => h.id === id && h.user_id === userId);
+    if (!habit) throw new StoreError("That habit no longer exists.");
+    habit.image_path = path;
+    habit.updated_at = now();
+    write(db);
+  },
+
   async deleteHabit(id) {
     const userId = currentUserId();
     const db = read();
@@ -187,7 +198,7 @@ export const localStore: HabitStore = {
       .sort((a, b) => a.position - b.position);
   },
 
-  async createSubtask(habitId, name) {
+  async createSubtask(habitId, name, imagePath: string | null = null) {
     const userId = currentUserId();
     const db = read();
     if (!db.habits.some((h) => h.id === habitId && h.user_id === userId)) {
@@ -199,6 +210,7 @@ export const localStore: HabitStore = {
       habit_id: habitId,
       user_id: userId,
       name,
+      image_path: imagePath,
       position: siblings.reduce((max, s) => Math.max(max, s.position), -1) + 1,
       created_at: now(),
       updated_at: now(),
@@ -214,6 +226,16 @@ export const localStore: HabitStore = {
     const subtask = db.subtasks.find((s) => s.id === id && s.user_id === userId);
     if (!subtask) throw new StoreError("That subtask no longer exists.");
     subtask.name = name;
+    subtask.updated_at = now();
+    write(db);
+  },
+
+  async setSubtaskImage(id, path) {
+    const userId = currentUserId();
+    const db = read();
+    const subtask = db.subtasks.find((s) => s.id === id && s.user_id === userId);
+    if (!subtask) throw new StoreError("That subtask no longer exists.");
+    subtask.image_path = path;
     subtask.updated_at = now();
     write(db);
   },
@@ -284,6 +306,14 @@ export const localStore: HabitStore = {
   async uploadPhoto(file, habitId, date) {
     const userId = currentUserId();
     const path = `${userId}/${habitId}/${date}-${crypto.randomUUID()}`;
+    const dataUrl = await readAsDataUrl(file);
+    await photoTx("readwrite", (store) => store.put(dataUrl, path));
+    return path;
+  },
+
+  async uploadIcon(file, kind) {
+    const userId = currentUserId();
+    const path = `${userId}/${kind}/${crypto.randomUUID()}`;
     const dataUrl = await readAsDataUrl(file);
     await photoTx("readwrite", (store) => store.put(dataUrl, path));
     return path;

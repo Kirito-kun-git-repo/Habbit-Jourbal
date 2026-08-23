@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { JournalCard, hasContent, type JournalEntry } from "@/components/journal/JournalView";
 import { CheckIcon } from "@/components/ui/icons";
 import type { Habit, Subtask } from "@/lib/data";
+import { HabitBadge } from "@/components/habits/HabitBadge";
 import { habitColor } from "@/lib/colors";
 import { dayProgress } from "@/lib/progress";
 import type { EntryMap } from "@/lib/hooks/useHabitData";
@@ -28,6 +29,7 @@ export function WeeklyView({
   const highlights = useMemo(() => {
     const names = new Map(habits.map((h) => [h.id, h.name]));
     const colors = new Map(habits.map((h) => [h.id, h.color as string]));
+    const images = new Map(habits.map((h) => [h.id, h.image_path]));
     const rows: { date: ISODate; entries: JournalEntry[] }[] = [];
     for (const date of days) {
       const dayEntries = habits
@@ -38,6 +40,7 @@ export function WeeklyView({
           ...entry,
           habitName: names.get(entry.habit_id) ?? "",
           habitColor: colors.get(entry.habit_id) ?? "",
+          habitImage: images.get(entry.habit_id) ?? null,
         }));
       if (dayEntries.length > 0) rows.push({ date, entries: dayEntries });
     }
@@ -77,11 +80,7 @@ export function WeeklyView({
           {habits.map((habit) => (
             <div key={habit.id} className="contents">
               <div className="flex items-center gap-2 border-b border-r border-line px-4 py-2">
-                <span
-                  className="h-[10px] w-[10px] shrink-0 rounded-full"
-                  style={{ backgroundColor: habitColor(habit.color) }}
-                  aria-hidden="true"
-                />
+                <HabitBadge imagePath={habit.image_path} color={habit.color} size={20} />
                 <span className="truncate text-[14.5px] font-medium text-ink">{habit.name}</span>
               </div>
               {days.map((date) => {

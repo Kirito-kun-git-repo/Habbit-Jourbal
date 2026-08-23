@@ -10,7 +10,7 @@ import {
   useRef,
 } from "react";
 import type { Habit, Subtask } from "@/lib/data";
-import { habitColor } from "@/lib/colors";
+import { HabitBadge } from "@/components/habits/HabitBadge";
 import type { EntryMap } from "@/lib/hooks/useHabitData";
 import {
   dayOfMonth,
@@ -256,10 +256,11 @@ export const CalendarGrid = forwardRef<GridApi, Props>(function CalendarGrid(
                 mode === "detailed" ? "items-start pt-3" : "items-center"
               }`}
             >
-              <span
-                className="mr-2 mt-[3px] h-[10px] w-[10px] shrink-0 rounded-full"
-                style={{ backgroundColor: habitColor(habit.color) }}
-                aria-hidden="true"
+              <HabitBadge
+                imagePath={habit.image_path}
+                color={habit.color}
+                size={20}
+                className="mr-2 mt-[2px]"
               />
               <span className="truncate text-[14.5px] font-medium text-ink" title={habit.name}>
                 {habit.name}

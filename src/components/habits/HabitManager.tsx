@@ -7,6 +7,7 @@ import { ArrowDownIcon, ArrowUpIcon, CloseIcon, PlusIcon, TrashIcon } from "@/co
 import type { Habit, Subtask } from "@/lib/data";
 import { habitColor, nextColorForPosition } from "@/lib/colors";
 import { ColorPicker } from "./ColorPicker";
+import { ImagePicker } from "./ImagePicker";
 
 const inputClass =
   "w-full rounded-sm border border-line-strong bg-surface px-3 py-2 text-[15px] text-ink placeholder:text-muted/70 transition-colors duration-150 focus:border-accent";
@@ -19,28 +20,33 @@ export function HabitManager({
   onAdd,
   onRename,
   onRecolor,
+  onSetHabitImage,
   onDelete,
   onMove,
   onAddSubtask,
   onRenameSubtask,
+  onSetSubtaskImage,
   onDeleteSubtask,
 }: {
   open: boolean;
   habits: Habit[];
   subtasksByHabit: Record<string, Subtask[]>;
   onClose: () => void;
-  onAdd: (name: string, color: string) => void;
+  onAdd: (name: string, color: string, imagePath: string | null) => void;
   onRename: (id: string, name: string) => void;
   onRecolor: (id: string, color: string) => void;
+  onSetHabitImage: (id: string, path: string | null) => void;
   onDelete: (id: string) => void;
   onMove: (id: string, direction: -1 | 1) => void;
-  onAddSubtask: (habitId: string, name: string) => void;
+  onAddSubtask: (habitId: string, name: string, imagePath: string | null) => void;
   onRenameSubtask: (id: string, name: string) => void;
+  onSetSubtaskImage: (id: string, path: string | null) => void;
   onDeleteSubtask: (id: string) => void;
 }) {
   const titleId = useId();
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState<string>(nextColorForPosition(habits.length));
+  const [newImage, setNewImage] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -51,8 +57,9 @@ export function HabitManager({
   const submitNew = () => {
     const name = newName.trim();
     if (!name) return;
-    onAdd(name, newColor);
+    onAdd(name, newColor, newImage);
     setNewName("");
+    setNewImage(null);
     setNewColor(nextColorForPosition(habits.length + 1));
   };
 
@@ -91,6 +98,14 @@ export function HabitManager({
             }}
           >
             <div className="flex gap-2">
+              <ImagePicker
+                path={newImage}
+                kind="habits"
+                label="the new habit"
+                color={newColor}
+                size={38}
+                onChange={setNewImage}
+              />
               <input
                 className={inputClass}
                 value={newName}
@@ -120,10 +135,13 @@ export function HabitManager({
               return (
                 <li key={habit.id} className="py-2.5">
                   <div className="flex items-center gap-2">
-                    <span
-                      className="h-[12px] w-[12px] shrink-0 rounded-full"
-                      style={{ backgroundColor: color }}
-                      aria-hidden="true"
+                    <ImagePicker
+                      path={habit.image_path}
+                      kind="habits"
+                      label={habit.name}
+                      color={color}
+                      size={30}
+                      onChange={(path) => onSetHabitImage(habit.id, path)}
                     />
 
                     {editingId === habit.id ? (
@@ -200,8 +218,10 @@ export function HabitManager({
                       <SubtaskEditor
                         habit={habit}
                         subtasks={subtasks}
+                        color={color}
                         onAdd={onAddSubtask}
                         onRename={onRenameSubtask}
+                        onSetImage={onSetSubtaskImage}
                         onDelete={onDeleteSubtask}
                       />
                     </div>
@@ -256,17 +276,22 @@ export function HabitManager({
 function SubtaskEditor({
   habit,
   subtasks,
+  color,
   onAdd,
   onRename,
+  onSetImage,
   onDelete,
 }: {
   habit: Habit;
   subtasks: Subtask[];
-  onAdd: (habitId: string, name: string) => void;
+  color: string;
+  onAdd: (habitId: string, name: string, imagePath: string | null) => void;
   onRename: (id: string, name: string) => void;
+  onSetImage: (id: string, path: string | null) => void;
   onDelete: (id: string) => void;
 }) {
   const [name, setName] = useState("");
+  const [image, setImage] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
 
@@ -286,6 +311,14 @@ function SubtaskEditor({
         <ul className="space-y-1">
           {subtasks.map((subtask) => (
             <li key={subtask.id} className="flex items-center gap-1.5">
+              <ImagePicker
+                path={subtask.image_path}
+                kind="subtasks"
+                label={subtask.name}
+                color={color}
+                size={26}
+                onChange={(path) => onSetImage(subtask.id, path)}
+              />
               {editingId === subtask.id ? (
                 <input
                   autoFocus
@@ -327,10 +360,19 @@ function SubtaskEditor({
           event.preventDefault();
           const next = name.trim();
           if (!next) return;
-          onAdd(habit.id, next);
+          onAdd(habit.id, next, image);
           setName("");
+          setImage(null);
         }}
       >
+        <ImagePicker
+          path={image}
+          kind="subtasks"
+          label="the new subtask"
+          color={color}
+          size={30}
+          onChange={setImage}
+        />
         <input
           className={inputClass}
           value={name}
