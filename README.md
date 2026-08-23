@@ -3,6 +3,33 @@
 A habit tracker that remembers what actually happened. Rows are habits, columns
 are days, and any completion can carry a photo and a note.
 
+## The grid is one continuous stream
+
+Days run unbroken across month boundaries — scroll (two-finger swipe, trackpad,
+or drag anywhere on the grid) and the calendar keeps going in both directions.
+Month bands sit above the day numbers so you always know where you are, and the
+header names whichever month is at the left edge.
+
+The window starts at ~100 days around today and grows by 60 at whichever edge
+you approach, capped at 900 days so a long pan can't grow the DOM forever.
+Prepending offsets `scrollLeft` by exactly what was added, so the day under your
+cursor doesn't jump. **"This month"** snaps back to the 1st of the current month
+whenever you drift.
+
+## Appearance
+
+Theme and typeface live in a Zustand store (`src/lib/store/settings.ts`),
+persisted to localStorage and mirrored onto `<html data-theme data-font>`. An
+inline script in the layout applies them before first paint, so there's no flash
+of the wrong theme.
+
+- **Themes** — Warm paper, Light, Dark, Midnight.
+- **Typefaces** — Inter, Montserrat, Poppins, Lexend, Courier Prime.
+
+Habit colours are a single hex each. The lighter tones a cell needs are mixed in
+CSS with `color-mix()` against the current surface, so one habit colour reads
+correctly in every theme without being recomputed.
+
 ## Habits, subtasks, and colour
 
 A habit can hold **subtasks**. Each one is worth an equal share of that day, so
@@ -18,11 +45,12 @@ A habit with no subtasks stays a single tick.
   previously complete day becomes partial. Deleting one does the reverse; ids
   left behind by a deleted subtask are ignored rather than stored forever.
 
-Each habit also picks a **colour** from a curated palette of eight muted
-swatches (`src/lib/colors.ts`). Habits store the palette key, not a hex value,
-so the grid can't be filled with colours that fight the page background. The
-colour carries through the grid, weekly view, journal cards, consistency bars,
-and the entry drawer.
+Each habit picks a **colour**: twelve vibrant presets for speed, plus a
+hue/saturation/lightness picker for anything else, so twelve habits isn't a
+ceiling. Saturation and lightness are clamped to the band where a colour still
+works as a habit colour — bright enough to carry, dark enough for a white check
+mark to survive on it. The colour carries through the grid, weekly view, journal
+cards, consistency bars, and the entry drawer.
 
 ## Views
 

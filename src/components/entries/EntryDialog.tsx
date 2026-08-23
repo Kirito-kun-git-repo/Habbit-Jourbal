@@ -177,7 +177,7 @@ export function EntryDialog({
             >
               <span
                 className="h-[10px] w-[10px] shrink-0 rounded-full"
-                style={{ backgroundColor: color.base }}
+                style={{ backgroundColor: color }}
                 aria-hidden="true"
               />
               {habit.name}
@@ -202,7 +202,7 @@ export function EntryDialog({
                   Subtasks
                 </h3>
                 <p className="tabular text-[13.5px] text-muted">
-                  <span className="font-semibold" style={{ color: color.base }}>
+                  <span className="font-semibold" style={{ color: color }}>
                     {doneCount}/{subtasks.length}
                   </span>{" "}
                   · {percent}%
@@ -211,7 +211,7 @@ export function EntryDialog({
 
               <div
                 className="h-1 w-full overflow-hidden rounded-full"
-                style={{ backgroundColor: color.soft }}
+                style={{ backgroundColor: `color-mix(in srgb, ${color} 28%, var(--color-surface))` }}
                 role="progressbar"
                 aria-valuenow={percent}
                 aria-valuemin={0}
@@ -220,7 +220,7 @@ export function EntryDialog({
               >
                 <div
                   className="h-full rounded-full transition-[width] duration-200"
-                  style={{ width: `${percent}%`, backgroundColor: color.base }}
+                  style={{ width: `${percent}%`, backgroundColor: color }}
                 />
               </div>
 
@@ -235,13 +235,13 @@ export function EntryDialog({
                         aria-checked={done}
                         onClick={() => toggleSubtask(subtask.id)}
                         className="flex w-full items-center gap-3 px-3.5 py-2.5 text-left transition-colors duration-150"
-                        style={done ? { backgroundColor: color.tint } : undefined}
+                        style={done ? { backgroundColor: `color-mix(in srgb, ${color} 12%, var(--color-surface))` } : undefined}
                       >
                         <span
                           className="flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-xs border transition-colors duration-150"
                           style={
                             done
-                              ? { borderColor: color.base, backgroundColor: color.base, color: "#fff" }
+                              ? { borderColor: color, backgroundColor: color, color: "#fff" }
                               : { borderColor: "var(--color-line-strong)", backgroundColor: "#fff" }
                           }
                         >
@@ -273,7 +273,7 @@ export function EntryDialog({
               className="flex w-full items-center gap-3 rounded-sm border px-3.5 py-3 text-left transition-colors duration-150"
               style={
                 completed
-                  ? { borderColor: color.base, backgroundColor: color.tint }
+                  ? { borderColor: color, backgroundColor: `color-mix(in srgb, ${color} 12%, var(--color-surface))` }
                   : { borderColor: "var(--color-line-strong)", backgroundColor: "#fff" }
               }
             >
@@ -281,7 +281,7 @@ export function EntryDialog({
                 className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-xs border transition-colors duration-150"
                 style={
                   completed
-                    ? { borderColor: color.base, backgroundColor: color.base, color: "#fff" }
+                    ? { borderColor: color, backgroundColor: color, color: "#fff" }
                     : { borderColor: "var(--color-line-strong)", backgroundColor: "#fff" }
                 }
               >
@@ -308,7 +308,7 @@ export function EntryDialog({
             variant="primary"
             onClick={() => void handleSave()}
             disabled={busy}
-            style={{ backgroundColor: color.base }}
+            style={{ backgroundColor: color }}
           >
             {saving ? "Saving…" : "Save"}
           </Button>

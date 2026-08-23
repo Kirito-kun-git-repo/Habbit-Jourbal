@@ -78,7 +78,7 @@ export function ConsistencyView({
                 <h3 className="flex items-center gap-2 text-[15.5px] font-medium text-ink">
                   <span
                     className="h-[10px] w-[10px] shrink-0 rounded-full"
-                    style={{ backgroundColor: color.base }}
+                    style={{ backgroundColor: color }}
                     aria-hidden="true"
                   />
                   {habit.name}
@@ -127,10 +127,10 @@ export function ConsistencyView({
                       }`}
                       style={
                         fraction >= 1
-                          ? { backgroundColor: color.base }
+                          ? { backgroundColor: color }
                           : fraction > 0
                             ? {
-                                background: `linear-gradient(to top, ${color.base} ${pct}%, var(--color-line) ${pct}%)`,
+                                background: `linear-gradient(to top, ${color} ${pct}%, var(--color-line) ${pct}%)`,
                               }
                             : undefined
                       }

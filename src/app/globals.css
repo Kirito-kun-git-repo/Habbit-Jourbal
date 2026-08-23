@@ -1,30 +1,116 @@
 @import "tailwindcss";
 
-@theme {
-  --color-page: #faf8f4;
-  --color-surface: #ffffff;
-  --color-sunken: #f3efe8;
-  --color-ink: #26231f;
-  --color-ink-soft: #55504a;
-  --color-muted: #8b847b;
-  --color-line: #e7e1d7;
-  --color-line-strong: #d8d1c4;
-  --color-accent: #a2543a;
-  --color-accent-strong: #86412c;
-  --color-accent-soft: #f3e3da;
-  --color-accent-tint: #fbf2ec;
-  --color-danger: #9c3b31;
+/*
+ * Themes are plain custom-property sets swapped by `data-theme` on <html>.
+ * Habit colours are stored as a single hex per habit; every lighter tone the
+ * grid needs is mixed against --color-surface at paint time, so one habit
+ * colour works in all four themes without being recomputed.
+ */
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+@theme {
+  --color-page: var(--t-page);
+  --color-surface: var(--t-surface);
+  --color-sunken: var(--t-sunken);
+  --color-ink: var(--t-ink);
+  --color-ink-soft: var(--t-ink-soft);
+  --color-muted: var(--t-muted);
+  --color-line: var(--t-line);
+  --color-line-strong: var(--t-line-strong);
+  --color-accent: var(--t-accent);
+  --color-accent-strong: var(--t-accent-strong);
+  --color-accent-soft: var(--t-accent-soft);
+  --color-accent-tint: var(--t-accent-tint);
+  --color-danger: var(--t-danger);
+
+  --font-sans: var(--font-app), ui-sans-serif, system-ui, -apple-system, sans-serif;
 
   --radius-xs: 3px;
   --radius-sm: 5px;
   --radius-md: 8px;
 }
 
-:root {
+/* --- themes ---------------------------------------------------------------- */
+
+:root,
+:root[data-theme="warm"] {
   color-scheme: light;
+  --t-page: #faf8f4;
+  --t-surface: #ffffff;
+  --t-sunken: #f3efe8;
+  --t-ink: #26231f;
+  --t-ink-soft: #55504a;
+  --t-muted: #8b847b;
+  --t-line: #e7e1d7;
+  --t-line-strong: #d8d1c4;
+  --t-accent: #f97316;
+  --t-accent-strong: #ea580c;
+  --t-accent-soft: #fde4cf;
+  --t-accent-tint: #fef4ec;
+  --t-danger: #dc2626;
 }
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --t-page: #f7f8fa;
+  --t-surface: #ffffff;
+  --t-sunken: #eef0f4;
+  --t-ink: #1a1d23;
+  --t-ink-soft: #4a5059;
+  --t-muted: #808894;
+  --t-line: #e3e6ec;
+  --t-line-strong: #cfd4dd;
+  --t-accent: #3b82f6;
+  --t-accent-strong: #2563eb;
+  --t-accent-soft: #dbe9fe;
+  --t-accent-tint: #eff5ff;
+  --t-danger: #dc2626;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --t-page: #17181c;
+  --t-surface: #1f2126;
+  --t-sunken: #282b31;
+  --t-ink: #f0f1f3;
+  --t-ink-soft: #b9bec7;
+  --t-muted: #858b96;
+  --t-line: #32353c;
+  --t-line-strong: #43474f;
+  --t-accent: #fb923c;
+  --t-accent-strong: #fdba74;
+  --t-accent-soft: #3a2a1c;
+  --t-accent-tint: #26201a;
+  --t-danger: #f87171;
+}
+
+:root[data-theme="midnight"] {
+  color-scheme: dark;
+  --t-page: #0d1117;
+  --t-surface: #151b23;
+  --t-sunken: #1c232d;
+  --t-ink: #e8edf4;
+  --t-ink-soft: #adb9c9;
+  --t-muted: #7b8798;
+  --t-line: #253040;
+  --t-line-strong: #35435a;
+  --t-accent: #38bdf8;
+  --t-accent-strong: #7dd3fc;
+  --t-accent-soft: #10303f;
+  --t-accent-tint: #0f2430;
+  --t-danger: #f87171;
+}
+
+/* --- fonts ----------------------------------------------------------------- */
+
+:root,
+:root[data-font="inter"] { --font-app: var(--font-inter); }
+:root[data-font="montserrat"] { --font-app: var(--font-montserrat); }
+:root[data-font="poppins"] { --font-app: var(--font-poppins); }
+:root[data-font="lexend"] { --font-app: var(--font-lexend); }
+:root[data-font="courier"] { --font-app: var(--font-courier); }
+
+/* Courier Prime runs small and wide; nudge it back to a comfortable size. */
+:root[data-font="courier"] body { font-size: 15.5px; letter-spacing: -0.01em; }
 
 html,
 body {
@@ -39,6 +125,7 @@ body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  transition: background-color 200ms ease, color 200ms ease;
 }
 
 /* Numbers in the calendar should line up column to column. */
@@ -53,7 +140,25 @@ body {
   border-radius: 2px;
 }
 
-/* A quiet scrollbar so the wide calendar doesn't shout. */
+/* --- habit colour tones ------------------------------------------------------
+ * Every cell sets --habit-color; these mix it against the theme's surface so a
+ * bright hue becomes a readable wash in light themes and a deep one in dark. */
+
+.habit-fill-full {
+  background-color: color-mix(in srgb, var(--habit-color) 26%, var(--color-surface));
+}
+.habit-fill-tint {
+  background-color: color-mix(in srgb, var(--habit-color) 10%, var(--color-surface));
+}
+.group:hover .habit-hover-full {
+  background-color: color-mix(in srgb, var(--habit-color) 38%, var(--color-surface));
+}
+.group:hover .habit-hover-empty {
+  background-color: color-mix(in srgb, var(--habit-color) 12%, var(--color-surface));
+}
+
+/* --- quiet scrollbar --------------------------------------------------------- */
+
 .quiet-scroll {
   scrollbar-width: thin;
   scrollbar-color: var(--color-line-strong) transparent;
@@ -69,6 +174,13 @@ body {
 }
 .quiet-scroll::-webkit-scrollbar-track {
   background: transparent;
+}
+
+/* Drag-to-pan: suppress text selection while the grid is being dragged. */
+.is-panning,
+.is-panning * {
+  cursor: grabbing !important;
+  user-select: none !important;
 }
 
 @keyframes fade-in {
@@ -98,7 +210,12 @@ body {
 .anim-mark { animation: mark-in 180ms cubic-bezier(0.3, 1.3, 0.6, 1); }
 
 .skeleton {
-  background: linear-gradient(90deg, var(--color-sunken) 25%, #ece7de 50%, var(--color-sunken) 75%);
+  background: linear-gradient(
+    90deg,
+    var(--color-sunken) 25%,
+    color-mix(in srgb, var(--color-sunken) 70%, var(--color-line)) 50%,
+    var(--color-sunken) 75%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.4s linear infinite;
 }

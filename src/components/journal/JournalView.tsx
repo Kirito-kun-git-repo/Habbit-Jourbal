@@ -128,7 +128,7 @@ export function JournalCard({
         <span className="flex items-center gap-2 text-[15px] font-medium text-ink">
           <span
             className="h-[9px] w-[9px] shrink-0 rounded-full"
-            style={{ backgroundColor: habitColor(entry.habitColor).base }}
+            style={{ backgroundColor: habitColor(entry.habitColor) }}
             aria-hidden="true"
           />
           {entry.habitName}

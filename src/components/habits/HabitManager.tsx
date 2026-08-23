@@ -5,12 +5,8 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { ArrowDownIcon, ArrowUpIcon, CloseIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
 import type { Habit, Subtask } from "@/lib/data";
-import {
-  HABIT_COLOR_KEYS,
-  habitColor,
-  nextColorForPosition,
-  type HabitColorKey,
-} from "@/lib/colors";
+import { habitColor, nextColorForPosition } from "@/lib/colors";
+import { ColorPicker } from "./ColorPicker";
 
 const inputClass =
   "w-full rounded-sm border border-line-strong bg-surface px-3 py-2 text-[15px] text-ink placeholder:text-muted/70 transition-colors duration-150 focus:border-accent";
@@ -33,9 +29,9 @@ export function HabitManager({
   habits: Habit[];
   subtasksByHabit: Record<string, Subtask[]>;
   onClose: () => void;
-  onAdd: (name: string, color: HabitColorKey) => void;
+  onAdd: (name: string, color: string) => void;
   onRename: (id: string, name: string) => void;
-  onRecolor: (id: string, color: HabitColorKey) => void;
+  onRecolor: (id: string, color: string) => void;
   onDelete: (id: string) => void;
   onMove: (id: string, direction: -1 | 1) => void;
   onAddSubtask: (habitId: string, name: string) => void;
@@ -44,7 +40,7 @@ export function HabitManager({
 }) {
   const titleId = useId();
   const [newName, setNewName] = useState("");
-  const [newColor, setNewColor] = useState<HabitColorKey>(nextColorForPosition(habits.length));
+  const [newColor, setNewColor] = useState<string>(nextColorForPosition(habits.length));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -126,7 +122,7 @@ export function HabitManager({
                   <div className="flex items-center gap-2">
                     <span
                       className="h-[12px] w-[12px] shrink-0 rounded-full"
-                      style={{ backgroundColor: color.base }}
+                      style={{ backgroundColor: color }}
                       aria-hidden="true"
                     />
 
@@ -254,46 +250,6 @@ export function HabitManager({
         </div>
       </div>
     </Modal>
-  );
-}
-
-function ColorPicker({
-  value,
-  onChange,
-  label,
-}: {
-  value: string;
-  onChange: (key: HabitColorKey) => void;
-  label: string;
-}) {
-  return (
-    <div role="radiogroup" aria-label={label} className="flex flex-wrap items-center gap-1.5">
-      {HABIT_COLOR_KEYS.map((key) => {
-        const color = habitColor(key);
-        const active = key === value;
-        return (
-          <button
-            key={key}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            aria-label={color.label}
-            title={color.label}
-            onClick={() => onChange(key)}
-            className="flex h-7 w-7 items-center justify-center rounded-full transition-transform duration-150 hover:scale-110"
-            style={{
-              backgroundColor: color.soft,
-              boxShadow: active ? `0 0 0 2px var(--color-surface), 0 0 0 3.5px ${color.base}` : "none",
-            }}
-          >
-            <span
-              className="h-[14px] w-[14px] rounded-full"
-              style={{ backgroundColor: color.base }}
-            />
-          </button>
-        );
-      })}
-    </div>
   );
 }
 

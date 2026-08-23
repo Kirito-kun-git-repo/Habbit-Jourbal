@@ -1,4 +1,3 @@
-import type { HabitColorKey } from "@/lib/colors";
 import { supabaseClient } from "@/lib/supabase/client";
 import type { ISODate } from "@/lib/dates";
 import {
@@ -58,7 +57,7 @@ export const supabaseStore: HabitStore = {
     return (data ?? []) as Habit[];
   },
 
-  async createHabit(name, color: HabitColorKey) {
+  async createHabit(name, color: string) {
     const userId = await requireUserId();
     const existing = await this.listHabits();
     const position = existing.reduce((max, h) => Math.max(max, h.position), -1) + 1;
@@ -76,7 +75,7 @@ export const supabaseStore: HabitStore = {
     if (error) fail("Could not rename the habit", error);
   },
 
-  async recolorHabit(id, color: HabitColorKey) {
+  async recolorHabit(id, color: string) {
     const { error } = await supabaseClient().from("habits").update({ color }).eq("id", id);
     if (error) fail("Could not change the colour", error);
   },

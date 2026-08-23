@@ -4,7 +4,7 @@
  * builds — the entry point is guarded by NODE_ENV in the UI.
  */
 import { store } from "@/lib/data";
-import { HABIT_COLOR_KEYS } from "@/lib/colors";
+import { COLOR_PRESETS } from "@/lib/colors";
 import { addDays, today } from "@/lib/dates";
 
 const HABITS = ["Workout", "Read", "Study DSA", "Drink water", "Meditation", "Sleep before 11 PM"];
@@ -80,7 +80,7 @@ function rand(seed: number) {
 
 export async function seedDemoData(days = 38) {
   const habits = await Promise.all(
-    HABITS.map((name, i) => store.createHabit(name, HABIT_COLOR_KEYS[i % HABIT_COLOR_KEYS.length])),
+    HABITS.map((name, i) => store.createHabit(name, COLOR_PRESETS[i % COLOR_PRESETS.length].hex)),
   );
 
   const subtasksByHabit: Record<string, string[]> = {};

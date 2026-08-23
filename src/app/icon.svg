@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#F97316"/>
+  <!-- three habit rows, the last one checked off -->
+  <rect x="7"  y="8"  width="7" height="4" rx="1.4" fill="#FFFFFF" opacity="0.55"/>
+  <rect x="16" y="8"  width="9" height="4" rx="1.4" fill="#FFFFFF" opacity="0.9"/>
+  <rect x="7"  y="14" width="9" height="4" rx="1.4" fill="#FFFFFF" opacity="0.9"/>
+  <rect x="18" y="14" width="7" height="4" rx="1.4" fill="#FFFFFF" opacity="0.55"/>
+  <path d="M7.5 22.8l3 3 7-7.2" fill="none" stroke="#FFFFFF" stroke-width="3"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

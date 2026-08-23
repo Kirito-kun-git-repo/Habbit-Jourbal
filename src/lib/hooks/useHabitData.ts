@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { store, type EntryDraft, type Habit, type HabitEntry, type Subtask } from "@/lib/data";
-import { nextColorForPosition, type HabitColorKey } from "@/lib/colors";
+import { nextColorForPosition } from "@/lib/colors";
 import type { ISODate } from "@/lib/dates";
 
 export type EntryMap = Record<string, Record<ISODate, HabitEntry>>;
@@ -149,7 +149,7 @@ export function useHabitData(onError: (message: string) => void) {
   );
 
   const addHabit = useCallback(
-    async (name: string, color?: HabitColorKey) => {
+    async (name: string, color?: string) => {
       try {
         const habit = await store.createHabit(
           name.trim(),
@@ -166,7 +166,7 @@ export function useHabitData(onError: (message: string) => void) {
   );
 
   const recolorHabit = useCallback(
-    async (id: string, color: HabitColorKey) => {
+    async (id: string, color: string) => {
       const previous = habits;
       setHabits((current) => current.map((h) => (h.id === id ? { ...h, color } : h)));
       try {

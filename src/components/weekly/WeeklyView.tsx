@@ -79,7 +79,7 @@ export function WeeklyView({
               <div className="flex items-center gap-2 border-b border-r border-line px-4 py-2">
                 <span
                   className="h-[10px] w-[10px] shrink-0 rounded-full"
-                  style={{ backgroundColor: habitColor(habit.color).base }}
+                  style={{ backgroundColor: habitColor(habit.color) }}
                   aria-hidden="true"
                 />
                 <span className="truncate text-[14.5px] font-medium text-ink">{habit.name}</span>
@@ -105,20 +105,20 @@ export function WeeklyView({
                     className="relative flex h-12 items-center justify-center border-b border-r border-line transition-colors duration-150 hover:bg-sunken"
                     style={
                       progress.fraction >= 1
-                        ? { backgroundColor: color.soft }
+                        ? { backgroundColor: `color-mix(in srgb, ${color} 26%, var(--color-surface))` }
                         : progress.fraction > 0
                           ? {
-                              background: `linear-gradient(to top, ${color.soft} ${pct}%, ${color.tint} ${pct}%)`,
+                              background: `linear-gradient(to top, color-mix(in srgb, ${color} 26%, var(--color-surface)) ${pct}%, color-mix(in srgb, ${color} 9%, var(--color-surface)) ${pct}%)`,
                             }
                           : undefined
                     }
                   >
                     {progress.complete ? (
-                      <CheckIcon className="h-[18px] w-[18px]" style={{ color: color.base }} />
+                      <CheckIcon className="h-[18px] w-[18px]" style={{ color: color }} />
                     ) : progress.done > 0 ? (
                       <span
                         className="tabular text-[12.5px] font-semibold"
-                        style={{ color: color.base }}
+                        style={{ color: color }}
                       >
                         {progress.done}/{progress.total}
                       </span>

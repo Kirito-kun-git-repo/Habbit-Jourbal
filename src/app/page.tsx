@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AuthPanel } from "@/components/AuthPanel";
+import { SettingsSync } from "@/components/SettingsSync";
 import { HabitTracker } from "@/components/HabitTracker";
 import { ToastProvider } from "@/components/ui/Toast";
 import { GridSkeleton } from "@/components/ui/Skeleton";
@@ -10,6 +11,7 @@ import { store, type SessionUser } from "@/lib/data";
 export default function Page() {
   return (
     <ToastProvider>
+      <SettingsSync />
       <SessionGate />
     </ToastProvider>
   );

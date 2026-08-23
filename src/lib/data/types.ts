@@ -1,4 +1,3 @@
-import type { HabitColorKey } from "@/lib/colors";
 import type { ISODate } from "@/lib/dates";
 
 export type Habit = {
@@ -7,7 +6,7 @@ export type Habit = {
   name: string;
   position: number;
   is_active: boolean;
-  color: HabitColorKey;
+  color: string;
   created_at: string;
   updated_at: string;
 };
@@ -60,9 +59,9 @@ export interface HabitStore {
   signOut(): Promise<void>;
 
   listHabits(): Promise<Habit[]>;
-  createHabit(name: string, color: HabitColorKey): Promise<Habit>;
+  createHabit(name: string, color: string): Promise<Habit>;
   renameHabit(id: string, name: string): Promise<void>;
-  recolorHabit(id: string, color: HabitColorKey): Promise<void>;
+  recolorHabit(id: string, color: string): Promise<void>;
   deleteHabit(id: string): Promise<void>;
   reorderHabits(orderedIds: string[]): Promise<void>;
 

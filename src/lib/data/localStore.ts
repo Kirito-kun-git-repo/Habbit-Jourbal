@@ -6,7 +6,6 @@
  *
  * This is a development/demo backend. Configure Supabase for anything real.
  */
-import type { HabitColorKey } from "@/lib/colors";
 import type { ISODate } from "@/lib/dates";
 import {
   StoreError,
@@ -133,7 +132,7 @@ export const localStore: HabitStore = {
       .sort((a, b) => a.position - b.position);
   },
 
-  async createHabit(name, color: HabitColorKey) {
+  async createHabit(name, color: string) {
     const userId = currentUserId();
     const db = read();
     const mine = db.habits.filter((h) => h.user_id === userId);
@@ -162,7 +161,7 @@ export const localStore: HabitStore = {
     write(db);
   },
 
-  async recolorHabit(id, color: HabitColorKey) {
+  async recolorHabit(id, color: string) {
     const userId = currentUserId();
     const db = read();
     const habit = db.habits.find((h) => h.id === id && h.user_id === userId);

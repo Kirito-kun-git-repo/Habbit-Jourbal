@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/Button";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/ui/icons";
+import { SettingsMenu } from "@/components/ui/SettingsMenu";
 import { ViewSwitcher, type ViewKey } from "@/components/ui/ViewSwitcher";
 import { GridModeSwitcher } from "./GridModeSwitcher";
 import type { GridMode } from "./HabitCell";
@@ -18,6 +19,7 @@ export function CalendarHeader({
   onPrev,
   onNext,
   onToday,
+  todayLabel,
   prevLabel,
   nextLabel,
   gridMode,
@@ -36,6 +38,7 @@ export function CalendarHeader({
   onPrev: () => void;
   onNext: () => void;
   onToday: () => void;
+  todayLabel: string;
   prevLabel: string;
   nextLabel: string;
   gridMode: GridMode | null;
@@ -50,7 +53,8 @@ export function CalendarHeader({
         <h1 className="text-[15px] font-semibold tracking-[-0.01em] text-ink">
           Habit Journal
         </h1>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
+          <SettingsMenu />
           {email && (
             <span className="hidden max-w-[180px] truncate text-[13.5px] text-muted sm:inline">
               {email}
@@ -89,7 +93,7 @@ export function CalendarHeader({
               <ChevronRightIcon className="h-[18px] w-[18px]" />
             </button>
             <Button size="sm" variant="secondary" className="ml-1.5" onClick={onToday}>
-              Today
+              {todayLabel}
             </Button>
           </div>
         )}

@@ -3,7 +3,7 @@
 import { memo } from "react";
 import { EntryPhoto } from "@/components/entries/EntryPhoto";
 import type { HabitEntry, Subtask } from "@/lib/data";
-import { habitColor, type HabitColor } from "@/lib/colors";
+import { habitColor } from "@/lib/colors";
 import { formatLongDate, type ISODate } from "@/lib/dates";
 import { dayProgress } from "@/lib/progress";
 import { CheckIcon } from "@/components/ui/icons";
@@ -29,16 +29,6 @@ type Props = {
   onOpen: (habitId: string, date: ISODate) => void;
 };
 
-/** Partial days fill from the bottom, so a month reads like a set of gauges. */
-function fillStyle(fraction: number, color: HabitColor): React.CSSProperties | undefined {
-  if (fraction <= 0) return undefined;
-  if (fraction >= 1) return { backgroundColor: color.soft };
-  const pct = Math.round(fraction * 100);
-  return {
-    background: `linear-gradient(to top, ${color.soft} ${pct}%, ${color.tint} ${pct}%)`,
-  };
-}
-
 function HabitCellBase({
   habitId,
   habitName,
@@ -54,6 +44,7 @@ function HabitCellBase({
 }: Props) {
   const color = habitColor(colorKey);
   const progress = dayProgress(entry, subtasks);
+  const pct = Math.round(progress.fraction * 100);
   const note = entry?.note?.trim() ?? "";
   const hasNote = Boolean(note);
   const hasPhoto = Boolean(entry?.photo_path);
@@ -71,15 +62,15 @@ function HabitCellBase({
   const shell = [
     "group relative flex w-full border-b border-r border-line transition-colors duration-150",
     detailed ? "flex-col items-stretch gap-1.5 p-1.5 text-left" : "h-11 items-center justify-center",
-    isWeekend && progress.fraction === 0 ? "bg-[#faf8f4]" : "",
+    isWeekend && progress.fraction === 0 ? "bg-page" : "",
     isToday ? "shadow-[inset_0_0_0_1px_var(--color-accent)]" : "",
     isFuture && !entry ? "opacity-55" : "",
   ].join(" ");
 
   const mark = progress.complete ? (
-    <CheckIcon className="anim-mark h-[18px] w-[18px]" style={{ color: color.base }} />
+    <CheckIcon className="anim-mark h-[18px] w-[18px]" style={{ color }} />
   ) : progress.total > 0 && progress.done > 0 ? (
-    <span className="tabular text-[12px] font-semibold" style={{ color: color.base }}>
+    <span className="tabular text-[12px] font-semibold" style={{ color }}>
       {progress.done}/{progress.total}
     </span>
   ) : entry ? (
@@ -94,12 +85,12 @@ function HabitCellBase({
   const dots = (hasPhoto || hasNote) && (
     <span className="flex items-center gap-[3px]" aria-hidden="true">
       {hasPhoto && (
-        <span className="h-[4px] w-[4px] rounded-full" style={{ backgroundColor: color.base }} />
+        <span className="h-[4px] w-[4px] rounded-full" style={{ backgroundColor: color }} />
       )}
       {hasNote && (
         <span
           className="h-[4px] w-[4px] rounded-full opacity-45"
-          style={{ backgroundColor: color.base }}
+          style={{ backgroundColor: color }}
         />
       )}
     </span>
@@ -112,12 +103,27 @@ function HabitCellBase({
       aria-label={`${habitName}, ${formatLongDate(date)}. ${state}${extras ? `, ${extras}` : ""}.`}
       aria-pressed={progress.complete}
       className={shell}
-      style={{ ["--cell-hover" as string]: progress.fraction >= 1 ? color.softHover : color.tint }}
+      style={{ ["--habit-color" as string]: color }}
     >
-      {/* Fill sits behind the content so the button keeps its own hover colour. */}
+      {/* Fill sits behind the content so the button keeps its own hover colour.
+          Tones are mixed against the theme surface, so one hex works everywhere. */}
       <span
-        className="pointer-events-none absolute inset-0 transition-colors duration-150 group-hover:bg-[var(--cell-hover)]"
-        style={fillStyle(progress.fraction, color)}
+        className={`pointer-events-none absolute inset-0 transition-colors duration-150 ${
+          progress.fraction >= 1
+            ? "habit-fill-full habit-hover-full"
+            : progress.fraction > 0
+              ? "habit-hover-full"
+              : "habit-hover-empty"
+        }`}
+        style={
+          progress.fraction > 0 && progress.fraction < 1
+            ? {
+                background: `linear-gradient(to top,
+                  color-mix(in srgb, var(--habit-color) 26%, var(--color-surface)) ${pct}%,
+                  color-mix(in srgb, var(--habit-color) 9%, var(--color-surface)) ${pct}%)`,
+              }
+            : undefined
+        }
         aria-hidden="true"
       />
 
@@ -147,7 +153,11 @@ function HabitCellBase({
                     key={subtask.id}
                     title={subtask.name}
                     className="h-[3px] flex-1 min-w-[10px] rounded-full"
-                    style={{ backgroundColor: done ? color.base : color.soft }}
+                    style={{
+                      backgroundColor: done
+                        ? color
+                        : `color-mix(in srgb, ${color} 28%, var(--color-surface))`,
+                    }}
                   />
                 );
               })}

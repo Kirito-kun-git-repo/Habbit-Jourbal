@@ -73,6 +73,35 @@ export function weekDays(startISO: ISODate): ISODate[] {
   return Array.from({ length: 7 }, (_, i) => addDays(startISO, i));
 }
 
+/** Whole days from `a` to `b`; negative when `b` is earlier. */
+export function daysBetween(a: ISODate, b: ISODate): number {
+  const MS = 24 * 60 * 60 * 1000;
+  // Both are local midnights, so the difference is a whole number of days
+  // except across a DST boundary — rounding absorbs that.
+  return Math.round((fromISODate(b).getTime() - fromISODate(a).getTime()) / MS);
+}
+
+/** Inclusive list of every day from `from` to `to`. */
+export function dateRange(from: ISODate, to: ISODate): ISODate[] {
+  const count = daysBetween(from, to);
+  if (count < 0) return [];
+  return Array.from({ length: count + 1 }, (_, i) => addDays(from, i));
+}
+
+/** "Aug 2026" */
+export function formatMonthShort(iso: ISODate): string {
+  return fromISODate(iso).toLocaleDateString(undefined, { month: "long", year: "numeric" });
+}
+
+export function monthKey(iso: ISODate): string {
+  return iso.slice(0, 7);
+}
+
+/** First day of the month containing `iso`. */
+export function startOfMonth(iso: ISODate): ISODate {
+  return `${iso.slice(0, 7)}-01`;
+}
+
 export function dayOfMonth(iso: ISODate): number {
   return Number(iso.slice(8, 10));
 }
