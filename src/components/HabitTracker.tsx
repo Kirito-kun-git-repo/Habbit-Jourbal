@@ -83,8 +83,8 @@ export function HabitTracker({ user, onSignedOut }: { user: SessionUser; onSigne
     });
   }, []);
 
-  /** Put `date` at the left edge, widening the window first if it's outside. */
-  const goToDate = useCallback((date: ISODate) => {
+  /** Scroll to `date`, widening the window first if it falls outside it. */
+  const goToDate = useCallback((date: ISODate, align: "start" | "center" = "start") => {
     setRange((current) => {
       const from = date < current.from ? addDays(date, -CHUNK) : current.from;
       const to = date > current.to ? addDays(date, CHUNK) : current.to;
@@ -92,7 +92,7 @@ export function HabitTracker({ user, onSignedOut }: { user: SessionUser; onSigne
     });
     setAnchor(date);
     // Wait for the widened range to render before scrolling to it.
-    requestAnimationFrame(() => gridApi.current?.scrollToDate(date));
+    requestAnimationFrame(() => gridApi.current?.scrollToDate(date, "smooth", align));
   }, []);
 
   const openCell = useCallback(
@@ -127,12 +127,12 @@ export function HabitTracker({ user, onSignedOut }: { user: SessionUser; onSigne
     else setAnchor(first);
   };
 
-  /** The "drifted while sliding" escape hatch: back to the 1st of this month. */
+  /** The "drifted while sliding" escape hatch — lands today mid-screen. */
   const goToToday = () => {
-    const first = startOfMonth(today());
-    setWeekStartISO(weekStart(today()));
-    if (view === "grid") goToDate(first);
-    else setAnchor(first);
+    const now = today();
+    setWeekStartISO(weekStart(now));
+    if (view === "grid") goToDate(now, "center");
+    else setAnchor(startOfMonth(now));
   };
 
   const jumpToMonth = (year: number, month: number) => {
@@ -155,7 +155,7 @@ export function HabitTracker({ user, onSignedOut }: { user: SessionUser; onSigne
   useEffect(() => {
     if (didInitialScroll.current || data.loading || data.habits.length === 0) return;
     didInitialScroll.current = true;
-    requestAnimationFrame(() => gridApi.current?.scrollToDate(startOfMonth(today()), "auto"));
+    requestAnimationFrame(() => gridApi.current?.scrollToDate(today(), "auto", "center"));
   }, [data.loading, data.habits.length]);
 
   const noHabits = !data.loading && data.habits.length === 0;
@@ -173,7 +173,7 @@ export function HabitTracker({ user, onSignedOut }: { user: SessionUser; onSigne
         onPrev={() => step(-1)}
         onNext={() => step(1)}
         onToday={goToToday}
-        todayLabel={view === "grid" ? "This month" : "Today"}
+        todayLabel="Today"
         prevLabel={isWeekly ? "Previous week" : "Previous month"}
         nextLabel={isWeekly ? "Next week" : "Next month"}
         gridMode={view === "grid" ? gridMode : null}

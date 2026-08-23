@@ -144,30 +144,31 @@ export function TrendBadge({ delta }: { delta: number }) {
   const up = delta > 0;
   const color = flat ? "var(--color-muted)" : up ? "#16A34A" : "#DC2626";
 
+  // Direction only. The bars and the trend line already say how much by; a
+  // number and a tooltip on top of them is just noise.
   return (
-    <span
-      className="inline-flex items-center gap-1 text-[13px] font-semibold"
+    <svg
+      viewBox="0 0 16 16"
+      className="h-[18px] w-[18px] shrink-0"
       style={{ color }}
-      title={`7-day average vs the 7 days before: ${delta > 0 ? "+" : ""}${delta} points`}
+      role="img"
+      aria-label={
+        flat ? "Consistency is steady" : `Consistency is ${up ? "rising" : "falling"}`
+      }
     >
-      <svg viewBox="0 0 16 16" className="h-[13px] w-[13px]" aria-hidden="true">
-        {flat ? (
-          <path d="M3 8h10M11 5.5 13.5 8 11 10.5" fill="none" stroke="currentColor"
-            strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        ) : (
-          <path
-            d={up ? "M3 12 8 5l5 7" : "M3 4l5 7 5-7"}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        )}
-      </svg>
-      <span className="tabular">
-        {flat ? "steady" : `${up ? "+" : ""}${delta} pts`}
-      </span>
-    </span>
+      {flat ? (
+        <path d="M3 8h10M11 5.5 13.5 8 11 10.5" fill="none" stroke="currentColor"
+          strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      ) : (
+        <path
+          d={up ? "M3 12 8 5l5 7" : "M3 4l5 7 5-7"}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      )}
+    </svg>
   );
 }

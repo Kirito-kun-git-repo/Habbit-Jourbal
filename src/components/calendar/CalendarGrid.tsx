@@ -42,8 +42,15 @@ const BADGE: Record<GridMode, number> = { compact: 56, detailed: 72 };
 const EDGE_PX = 900;
 
 export type GridApi = {
-  /** Bring `date` to the left edge, just right of the habit column. */
-  scrollToDate: (date: ISODate, behavior?: ScrollBehavior) => void;
+  /**
+   * `start` tucks the date against the habit column; `center` puts it in the
+   * middle of the visible day area, where the eye already is.
+   */
+  scrollToDate: (
+    date: ISODate,
+    behavior?: ScrollBehavior,
+    align?: "start" | "center",
+  ) => void;
 };
 
 type Props = {
@@ -115,12 +122,24 @@ export const CalendarGrid = forwardRef<GridApi, Props>(function CalendarGrid(
   }, [minDayCol]);
 
   const scrollToDate = useCallback(
-    (date: ISODate, behavior: ScrollBehavior = "smooth") => {
+    (date: ISODate, behavior: ScrollBehavior = "smooth", align: "start" | "center" = "start") => {
       const el = scroller.current;
       if (!el || days.length === 0) return;
       const index = daysBetween(days[0], date);
       const clamped = Math.max(0, Math.min(days.length - 1, index));
-      el.scrollTo({ left: clamped * columnWidth(), behavior });
+      const width = columnWidth();
+
+      // The habit column is sticky over the left edge, so the day area actually
+      // visible starts after it — centre within that, not within the scrollport.
+      const habitCol =
+        scroller.current?.querySelector<HTMLElement>("[data-habitcol]")?.getBoundingClientRect()
+          .width ?? 0;
+      const left =
+        align === "center"
+          ? clamped * width + width / 2 - (el.clientWidth - habitCol) / 2
+          : clamped * width;
+
+      el.scrollTo({ left: Math.max(0, left), behavior });
     },
     [columnWidth, days],
   );
@@ -222,9 +241,10 @@ export const CalendarGrid = forwardRef<GridApi, Props>(function CalendarGrid(
       onClickCapture={onClickCapture}
     >
       <div
-        className="grid min-w-full border-t border-line [--habit-col:148px] sm:[--habit-col:208px]"
+        className="grid min-h-full min-w-full border-t border-line [--habit-col:148px] sm:[--habit-col:208px]"
         style={{
           gridTemplateColumns: `var(--habit-col) repeat(${days.length}, minmax(${minDayCol}px, 1fr))`,
+          gridTemplateRows: `auto auto repeat(${habits.length}, auto) 1fr auto`,
           minWidth: `calc(var(--habit-col) + ${days.length * minDayCol}px)`,
         }}
         role="grid"
@@ -317,24 +337,26 @@ export const CalendarGrid = forwardRef<GridApi, Props>(function CalendarGrid(
           </div>
         ))}
 
-        {/* daily total — pinned to the bottom of the scrollport */}
+        {/* Spacer row. Keeps the habit column running down to the chart and
+            holds the chart against the bottom when there are only a few habits. */}
+        <div className="sticky left-0 z-10 border-r border-line bg-surface" />
+        <div style={{ gridColumn: `span ${days.length}` }} />
+
+        {/* daily total — always on the bottom edge of the scrollport */}
         <div className="contents">
           <div
-            className="sticky bottom-0 left-0 z-40 flex flex-col justify-center gap-2 overflow-hidden border-r border-t border-line bg-surface px-3 py-3 pr-9 sm:px-4 sm:pr-10"
+            className="sticky bottom-0 left-0 z-40 flex flex-col gap-1.5 overflow-hidden border-r border-t border-line bg-surface px-3 pb-3 pt-2.5 pr-9 sm:px-4 sm:pr-10"
             style={{ height: CHART_HEIGHT }}
           >
-            <div>
+            {/* Trend sits at the top of the chart, level with the 100% rule,
+                rather than floating halfway down the bars. */}
+            <TrendBadge delta={trend.delta} />
+
+            <div className="mt-auto">
               <p className="text-[12.5px] font-semibold uppercase tracking-[0.08em] text-muted">
                 Day total
               </p>
               <p className="text-[12px] text-muted">across {habits.length} habits</p>
-            </div>
-
-            <div>
-              <TrendBadge delta={trend.delta} />
-              <p className="tabular text-[12px] text-muted">
-                {Math.round(trend.recent * 100)}% avg, last 7 days
-              </p>
             </div>
 
             {/* Scale, sitting on the same rules the chart draws. */}
