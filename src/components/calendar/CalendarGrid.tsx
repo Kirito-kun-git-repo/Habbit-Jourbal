@@ -22,6 +22,7 @@ import {
   weekdayShort,
   type ISODate,
 } from "@/lib/dates";
+import { dayProgress } from "@/lib/progress";
 import { HabitCell, type GridMode } from "./HabitCell";
 
 // Detailed cells need room for a thumbnail and a few lines of note; compact
@@ -29,7 +30,10 @@ import { HabitCell, type GridMode } from "./HabitCell";
 const DAY_COL: Record<GridMode, number> = { compact: 38, detailed: 148 };
 
 // The habit thumbnail: big enough to read as the photo you uploaded.
-const BADGE: Record<GridMode, number> = { compact: 40, detailed: 64 };
+const BADGE: Record<GridMode, number> = { compact: 56, detailed: 72 };
+
+// Height of the daily-total bar row pinned under the habits.
+const SUMMARY_H = 64;
 
 /** How close to an edge before we ask for more days. */
 const EDGE_PX = 900;
@@ -79,6 +83,23 @@ export const CalendarGrid = forwardRef<GridApi, Props>(function CalendarGrid(
     }
     return spans;
   }, [days]);
+
+  // How much of the whole day got done, averaged over every habit. A habit
+  // that is half-finished contributes half, same as everywhere else.
+  const dayTotals = useMemo(() => {
+    const totals: Record<string, { fraction: number; done: number }> = {};
+    for (const date of days) {
+      let sum = 0;
+      let done = 0;
+      for (const habit of habits) {
+        const progress = dayProgress(entryMap[habit.id]?.[date], subtasksByHabit[habit.id] ?? []);
+        sum += progress.fraction;
+        if (progress.complete) done += 1;
+      }
+      totals[date] = { fraction: habits.length ? sum / habits.length : 0, done };
+    }
+    return totals;
+  }, [days, habits, entryMap, subtasksByHabit]);
 
   const columnWidth = useCallback(() => {
     const el = scroller.current?.querySelector<HTMLElement>("[data-daycol]");
@@ -287,6 +308,48 @@ export const CalendarGrid = forwardRef<GridApi, Props>(function CalendarGrid(
             ))}
           </div>
         ))}
+
+        {/* daily total — pinned to the bottom of the scrollport */}
+        <div className="contents">
+          <div
+            className="sticky bottom-0 left-0 z-40 flex flex-col justify-center border-r border-t border-line bg-surface px-3 sm:px-4"
+            style={{ height: SUMMARY_H }}
+          >
+            <span className="text-[12.5px] font-semibold uppercase tracking-[0.08em] text-muted">
+              Day total
+            </span>
+            <span className="text-[12px] text-muted">across {habits.length} habits</span>
+          </div>
+
+          {days.map((date) => {
+            const { fraction, done } = dayTotals[date] ?? { fraction: 0, done: 0 };
+            const pct = Math.round(fraction * 100);
+            const isToday = date === todayISO;
+            return (
+              <div
+                key={date}
+                title={`${dayOfMonth(date)}: ${pct}% — ${done} of ${habits.length} habits complete`}
+                className={`sticky bottom-0 z-30 flex items-end justify-center border-r border-t border-line px-[3px] pb-[3px] ${
+                  isToday ? "bg-accent-tint" : "bg-surface"
+                }`}
+                style={{ height: SUMMARY_H }}
+              >
+                <div
+                  className="w-full rounded-t-[2px] transition-[height] duration-200"
+                  style={{
+                    // Always leave a sliver so an empty day still reads as a column.
+                    height: `${Math.max(fraction * (SUMMARY_H - 10), fraction > 0 ? 3 : 2)}px`,
+                    backgroundColor:
+                      fraction > 0 ? "var(--color-accent)" : "var(--color-line)",
+                    opacity: fraction > 0 ? 0.35 + fraction * 0.65 : 1,
+                  }}
+                  role="img"
+                  aria-label={`${pct} percent of habits complete`}
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

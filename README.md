@@ -16,6 +16,14 @@ Prepending offsets `scrollLeft` by exactly what was added, so the day under your
 cursor doesn't jump. **"This month"** snaps back to the 1st of the current month
 whenever you drift.
 
+## Day total
+
+A bar row sits under the habits, one bar per day, showing how much of that day
+got done across every habit — a habit at 2/3 contributes two thirds, matching
+how completion is scored everywhere else. It's `position: sticky; bottom: 0`,
+so once you have more habits than fit on screen the row stays visible while the
+habit rows scroll under it.
+
 ## Appearance
 
 Theme and typeface live in a Zustand store (`src/lib/store/settings.ts`),
