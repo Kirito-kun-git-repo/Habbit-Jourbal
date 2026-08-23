@@ -18,11 +18,19 @@ whenever you drift.
 
 ## Day total
 
-A bar row sits under the habits, one bar per day, showing how much of that day
-got done across every habit — a habit at 2/3 contributes two thirds, matching
-how completion is scored everywhere else. It's `position: sticky; bottom: 0`,
-so once you have more habits than fit on screen the row stays visible while the
-habit rows scroll under it.
+A 172px chart sits under the habits, one bar per day, showing how much of that
+day got done across every habit — a habit at 2/3 contributes two thirds,
+matching how completion is scored everywhere else. Bars run red → amber → green
+with the score, so the colour carries the reading on its own.
+
+Over the bars is a **7-day trailing average**, and the label column shows which
+way it's going: `↑ +3 pts` compares the last 7 days against the 7 before them.
+The bars are noisy day to day; the line is what answers "am I improving".
+
+The whole thing is `position: sticky; bottom: 0`, so once you have more habits
+than fit on screen it stays visible while the habit rows scroll under it. Days
+with nothing logged draw no bar at all — a minimum-height stub reads as noise
+and leaks out from under the sticky label column.
 
 ## Appearance
 
