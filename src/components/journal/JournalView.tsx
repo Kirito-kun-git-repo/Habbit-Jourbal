@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { EntryPhoto } from "@/components/entries/EntryPhoto";
-import type { Habit, HabitEntry } from "@/lib/data";
+import { entryPhotoPaths, type Habit, type HabitEntry } from "@/lib/data";
 import { HabitBadge } from "@/components/habits/HabitBadge";
 import { formatLongDate, type ISODate } from "@/lib/dates";
 
@@ -14,7 +14,7 @@ export type JournalEntry = HabitEntry & {
 
 /** An entry worth reading has something to read: a note or a photo. */
 export function hasContent(entry: HabitEntry): boolean {
-  return Boolean(entry.note?.trim() || entry.photo_path);
+  return Boolean(entry.note?.trim()) || entryPhotoPaths(entry).length > 0;
 }
 
 export function JournalView({
@@ -130,6 +130,8 @@ export function JournalCard({
   onOpen: (habitId: string, date: ISODate) => void;
   compact?: boolean;
 }) {
+  const photos = entryPhotoPaths(entry);
+
   return (
     <button
       type="button"
@@ -146,13 +148,25 @@ export function JournalCard({
         </span>
       </div>
 
-      {entry.photo_path && (
-        <div className="mt-3 overflow-hidden rounded-xs border border-line bg-sunken">
-          <EntryPhoto
-            path={entry.photo_path}
-            alt={`${entry.habitName} photo`}
-            className={compact ? "h-36 w-full" : "h-56 w-full"}
-          />
+      {photos.length > 0 && (
+        // One photo fills the card; several tile, so a day with a dozen shots
+        // stays the same height as a day with one.
+        <div
+          className={`mt-3 grid gap-1.5 ${
+            photos.length === 1 ? "grid-cols-1" : compact ? "grid-cols-2" : "grid-cols-3"
+          }`}
+        >
+          {photos.map((path) => (
+            <div key={path} className="overflow-hidden rounded-xs border border-line bg-sunken">
+              <EntryPhoto
+                path={path}
+                alt={`${entry.habitName} photo`}
+                className={
+                  photos.length === 1 ? (compact ? "h-36 w-full" : "h-56 w-full") : "h-24 w-full"
+                }
+              />
+            </div>
+          ))}
         </div>
       )}
 

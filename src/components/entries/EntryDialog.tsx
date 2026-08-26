@@ -1,11 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
-import { CheckIcon, CloseIcon } from "@/components/ui/icons";
+import { CheckIcon, CloseIcon, ImageIcon } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/Toast";
-import { store, type EntryDraft, type Habit, type HabitEntry, type Subtask } from "@/lib/data";
+import {
+  store,
+  type EntryDraft,
+  type Habit,
+  type HabitEntry,
+  type Subtask,
+  type SubtaskPhotos,
+} from "@/lib/data";
 import { HabitBadge } from "@/components/habits/HabitBadge";
 import { EntryPhoto } from "@/components/entries/EntryPhoto";
 import { Lightbox } from "@/components/ui/Lightbox";
@@ -13,7 +20,7 @@ import { habitColor } from "@/lib/colors";
 import { formatLongDate, type ISODate } from "@/lib/dates";
 import { derivedCompleted } from "@/lib/progress";
 import { NotesEditor } from "./NotesEditor";
-import { PhotoUploader, validateImage } from "./PhotoUploader";
+import { PhotoGallery, validateImage } from "./PhotoUploader";
 
 export type EntryTarget = { habit: Habit; date: ISODate };
 
@@ -48,36 +55,38 @@ export function EntryDialog({
     return (entry?.completed_subtasks ?? []).filter((id) => live.has(id));
   });
   const [note, setNote] = useState(entry?.note ?? "");
-  const [photoPath, setPhotoPath] = useState<string | null>(entry?.photo_path ?? null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [photos, setPhotos] = useState<string[]>(entry?.photo_paths ?? []);
+  const [subtaskPhotos, setSubtaskPhotos] = useState<SubtaskPhotos>(() => {
+    const live = new Set(subtasks.map((s) => s.id));
+    return Object.fromEntries(
+      Object.entries(entry?.subtask_photos ?? {}).filter(([id]) => live.has(id)),
+    );
+  });
+  // How many day photos are in flight, and which subtask is mid-upload.
+  const [uploading, setUploading] = useState(0);
+  const [busySubtask, setBusySubtask] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [zoom, setZoom] = useState<{ path: string; caption: string } | null>(null);
 
   // Objects uploaded during this session that aren't referenced by a saved
-  // entry yet — cleaned up on close, or replaced on save.
+  // entry yet — cleaned up on close, or kept and their predecessors dropped on save.
   const orphans = useRef<string[]>([]);
-  const savedPhotoPath = useRef<string | null>(entry?.photo_path ?? null);
-
-  // Resolve the stored photo into a displayable URL.
-  useEffect(() => {
-    let cancelled = false;
-    if (!photoPath) {
-      setPreviewUrl(null);
-      return;
-    }
-    void store.photoUrl(photoPath).then((url) => {
-      if (!cancelled) setPreviewUrl(url);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [photoPath]);
+  const savedPaths = useRef<string[]>([
+    ...(entry?.photo_paths ?? []),
+    ...Object.values(entry?.subtask_photos ?? {}),
+  ]);
 
   const discardOrphans = useCallback(async () => {
     const paths = orphans.current;
     orphans.current = [];
     await Promise.all(paths.map((path) => store.removePhoto(path).catch(() => {})));
+  }, []);
+
+  /** Drop a photo that was uploaded in this sitting and never saved. */
+  const releaseIfUnsaved = useCallback((path: string | null | undefined) => {
+    if (!path || !orphans.current.includes(path)) return;
+    orphans.current = orphans.current.filter((p) => p !== path);
+    void store.removePhoto(path).catch(() => {});
   }, []);
 
   const close = useCallback(() => {
@@ -97,53 +106,86 @@ export function EntryDialog({
       current.includes(id) ? current.filter((s) => s !== id) : [...current, id],
     );
 
-  const handleSelect = async (file: File) => {
+  /** Uploads happen straight away so the grid fills in as each file lands. */
+  const upload = async (file: File): Promise<string | null> => {
     const problem = validateImage(file);
     if (problem) {
       notify(problem, "error");
-      return;
+      return null;
     }
-    setUploading(true);
-    setPreviewUrl(URL.createObjectURL(file));
     try {
       const path = await store.uploadPhoto(file, habit.id, date);
       orphans.current.push(path);
-      setPhotoPath(path);
+      return path;
     } catch (error) {
-      setPreviewUrl(photoPath ? previewUrl : null);
       notify(error instanceof Error ? error.message : "Photo upload failed.", "error");
-    } finally {
-      setUploading(false);
+      return null;
     }
   };
 
-  const handleRemovePhoto = () => {
-    if (photoPath && orphans.current.includes(photoPath)) {
-      void store.removePhoto(photoPath).catch(() => {});
-      orphans.current = orphans.current.filter((p) => p !== photoPath);
-    }
-    setPhotoPath(null);
-    setPreviewUrl(null);
+  const handleSelect = async (files: File[]) => {
+    setUploading((n) => n + files.length);
+    await Promise.all(
+      files.map(async (file) => {
+        const path = await upload(file);
+        if (path) setPhotos((current) => [...current, path]);
+        setUploading((n) => n - 1);
+      }),
+    );
+  };
+
+  const handleRemovePhoto = (path: string) => {
+    setPhotos((current) => current.filter((p) => p !== path));
+    releaseIfUnsaved(path);
+  };
+
+  const handleSubtaskPhoto = async (subtaskId: string, file: File) => {
+    setBusySubtask(subtaskId);
+    const replaced = subtaskPhotos[subtaskId];
+    const path = await upload(file);
+    setBusySubtask(null);
+    if (!path) return;
+    setSubtaskPhotos((current) => ({ ...current, [subtaskId]: path }));
+    releaseIfUnsaved(replaced);
+  };
+
+  const handleRemoveSubtaskPhoto = (subtaskId: string) => {
+    const path = subtaskPhotos[subtaskId];
+    setSubtaskPhotos((current) => {
+      const next = { ...current };
+      delete next[subtaskId];
+      return next;
+    });
+    releaseIfUnsaved(path);
   };
 
   const handleSave = async () => {
     setSaving(true);
     const trimmed = note.trim();
+    const live = new Set(subtasks.map((s) => s.id));
+    const keptSubtaskPhotos = Object.fromEntries(
+      Object.entries(subtaskPhotos).filter(([id]) => live.has(id)),
+    );
     const ok = await onSave({
       habit_id: habit.id,
       date,
       completed: derivedCompleted(doneSubtasks, subtasks, completed),
       completed_subtasks: doneSubtasks,
       note: trimmed ? trimmed : null,
-      photo_path: photoPath,
+      photo_paths: photos,
+      subtask_photos: keptSubtaskPhotos,
     });
     setSaving(false);
     if (!ok) return;
 
-    // The new photo is now referenced; drop whatever it replaced.
-    orphans.current = orphans.current.filter((p) => p !== photoPath);
-    const replaced = savedPhotoPath.current;
-    if (replaced && replaced !== photoPath) orphans.current.push(replaced);
+    // Whatever the saved entry now points at is no longer an orphan; whatever
+    // it used to point at and no longer does becomes one.
+    const referenced = new Set([...photos, ...Object.values(keptSubtaskPhotos)]);
+    orphans.current = orphans.current.filter((p) => !referenced.has(p));
+    for (const path of savedPaths.current) {
+      if (!referenced.has(path)) orphans.current.push(path);
+    }
+    savedPaths.current = [...referenced];
     await discardOrphans();
 
     notify("Entry saved.", "success");
@@ -160,7 +202,7 @@ export function EntryDialog({
     onClose();
   };
 
-  const busy = saving || uploading;
+  const busy = saving || uploading > 0 || busySubtask !== null;
 
   return (
     <Modal open onClose={close} labelledBy={titleId}>
@@ -294,6 +336,18 @@ export function EntryDialog({
                           {subtask.name}
                         </span>
                       </button>
+
+                      <SubtaskDayPhoto
+                        subtask={subtask}
+                        date={date}
+                        path={subtaskPhotos[subtask.id] ?? null}
+                        busy={busySubtask === subtask.id}
+                        onSelect={(file) => void handleSubtaskPhoto(subtask.id, file)}
+                        onRemove={() => handleRemoveSubtaskPhoto(subtask.id)}
+                        onZoom={(path) =>
+                          setZoom({ path, caption: `${subtask.name} · ${formatLongDate(date)}` })
+                        }
+                      />
                     </li>
                   );
                 })}
@@ -334,11 +388,12 @@ export function EntryDialog({
             </button>
           )}
 
-          <PhotoUploader
-            previewUrl={previewUrl}
+          <PhotoGallery
+            paths={photos}
             uploading={uploading}
-            onSelect={(file) => void handleSelect(file)}
+            onSelect={(files) => void handleSelect(files)}
             onRemove={handleRemovePhoto}
+            onZoom={(path) => setZoom({ path, caption: `${habit.name} · ${formatLongDate(date)}` })}
           />
 
           <NotesEditor id={notesId} value={note} onChange={setNote} />
@@ -374,5 +429,84 @@ export function EntryDialog({
         onClose={() => setZoom(null)}
       />
     </Modal>
+  );
+}
+
+/**
+ * One photo per subtask, for this day — distinct from the subtask's standing
+ * picture above, which is part of its definition and the same every day.
+ */
+function SubtaskDayPhoto({
+  subtask,
+  date,
+  path,
+  busy,
+  onSelect,
+  onRemove,
+  onZoom,
+}: {
+  subtask: Subtask;
+  date: ISODate;
+  path: string | null;
+  busy: boolean;
+  onSelect: (file: File) => void;
+  onRemove: () => void;
+  onZoom: (path: string) => void;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+
+  return (
+    <div className="border-t border-line px-3.5 py-2.5">
+      <input
+        ref={input}
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        aria-label={`Photo of ${subtask.name} for ${formatLongDate(date)}`}
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (file) onSelect(file);
+        }}
+      />
+
+      {busy ? (
+        <div className="skeleton h-24 w-full rounded-xs" aria-hidden="true" />
+      ) : path ? (
+        <div className="space-y-1.5">
+          <button
+            type="button"
+            onClick={() => onZoom(path)}
+            title="View full size"
+            aria-label={`View today's photo of ${subtask.name} full size`}
+            className="flex w-full cursor-zoom-in items-center justify-center overflow-hidden rounded-xs border border-line bg-sunken p-1"
+          >
+            <EntryPhoto
+              path={path}
+              alt={`${subtask.name} on ${formatLongDate(date)}`}
+              fit="contain"
+              className="max-h-[220px] w-auto max-w-full"
+            />
+          </button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => input.current?.click()}>
+              Replace
+            </Button>
+            <Button variant="ghost" size="sm" onClick={onRemove}>
+              Remove
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => input.current?.click()}
+          className="flex w-full items-center justify-center gap-2 rounded-xs border border-dashed border-line-strong px-3 py-2 text-[13.5px] text-muted transition-colors duration-150 hover:border-accent hover:bg-accent-tint hover:text-accent-strong"
+        >
+          <ImageIcon className="h-[15px] w-[15px]" />
+          Add a photo for today
+        </button>
+      )}
+    </div>
   );
 }

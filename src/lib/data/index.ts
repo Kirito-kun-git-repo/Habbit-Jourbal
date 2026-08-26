@@ -8,4 +8,5 @@ export const store: HabitStore = isSupabaseConfigured ? supabaseStore : localSto
 
 export const isDemoBackend = store.kind === "local";
 
+export * from "./normalize";
 export * from "./types";

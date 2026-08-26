@@ -24,6 +24,9 @@ export type Subtask = {
   updated_at: string;
 };
 
+/** Subtask id → the storage path of that subtask's photo for one day. */
+export type SubtaskPhotos = Record<string, string>;
+
 export type HabitEntry = {
   id: string;
   habit_id: string;
@@ -32,7 +35,9 @@ export type HabitEntry = {
   completed: boolean;
   completed_subtasks: string[];
   note: string | null;
-  photo_path: string | null;
+  /** Any number of photos for the day, in the order they were added. */
+  photo_paths: string[];
+  subtask_photos: SubtaskPhotos;
   created_at: string;
   updated_at: string;
 };
@@ -43,7 +48,8 @@ export type EntryDraft = {
   completed: boolean;
   completed_subtasks: string[];
   note: string | null;
-  photo_path: string | null;
+  photo_paths: string[];
+  subtask_photos: SubtaskPhotos;
 };
 
 export type SessionUser = { id: string; email: string | null };

@@ -2,7 +2,7 @@
 
 import { memo } from "react";
 import { EntryPhoto } from "@/components/entries/EntryPhoto";
-import type { HabitEntry, Subtask } from "@/lib/data";
+import { entryPhotoPaths, type HabitEntry, type Subtask } from "@/lib/data";
 import { habitColor } from "@/lib/colors";
 import { formatLongDate, type ISODate } from "@/lib/dates";
 import { dayProgress } from "@/lib/progress";
@@ -47,7 +47,8 @@ function HabitCellBase({
   const pct = Math.round(progress.fraction * 100);
   const note = entry?.note?.trim() ?? "";
   const hasNote = Boolean(note);
-  const hasPhoto = Boolean(entry?.photo_path);
+  const photos = entry ? entryPhotoPaths(entry) : [];
+  const hasPhoto = photos.length > 0;
   const detailed = mode === "detailed";
 
   const state = progress.complete
@@ -57,7 +58,12 @@ function HabitCellBase({
       : entry
         ? "Logged, not completed"
         : "Not completed";
-  const extras = [hasPhoto && "has a photo", hasNote && "has a note"].filter(Boolean).join(", ");
+  const extras = [
+    hasPhoto && (photos.length === 1 ? "has a photo" : `has ${photos.length} photos`),
+    hasNote && "has a note",
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   const shell = [
     "group relative flex w-full border-b border-r border-line transition-colors duration-150",
@@ -138,13 +144,20 @@ function HabitCellBase({
             {dots}
           </span>
 
-          {entry?.photo_path && (
+          {hasPhoto && (
+            // The cell shows the first photo and says how many more there are;
+            // the whole set is one click away in the entry.
             <span className="relative block overflow-hidden rounded-xs border border-line/70 bg-sunken">
               <EntryPhoto
-                path={entry.photo_path}
+                path={photos[0]}
                 alt={`${habitName} on ${formatLongDate(date)}`}
                 className="h-[68px] w-full"
               />
+              {photos.length > 1 && (
+                <span className="absolute bottom-[3px] right-[3px] rounded-full bg-[rgba(12,12,14,0.7)] px-1.5 py-[1px] text-[11px] font-medium text-white">
+                  +{photos.length - 1}
+                </span>
+              )}
             </span>
           )}
 

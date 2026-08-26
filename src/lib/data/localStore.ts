@@ -7,6 +7,7 @@
  * This is a development/demo backend. Configure Supabase for anything real.
  */
 import type { ISODate } from "@/lib/dates";
+import { normalizeEntry } from "./normalize";
 import {
   StoreError,
   type EntryDraft,
@@ -261,14 +262,16 @@ export const localStore: HabitStore = {
     const userId = currentUserId();
     return read()
       .entries.filter((e) => e.user_id === userId && e.date >= from && e.date <= to)
-      .sort((a, b) => a.date.localeCompare(b.date));
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map(normalizeEntry);
   },
 
   async listAllEntries() {
     const userId = currentUserId();
     return read()
       .entries.filter((e) => e.user_id === userId)
-      .sort((a, b) => a.date.localeCompare(b.date));
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map(normalizeEntry);
   },
 
   async upsertEntry(draft: EntryDraft) {
@@ -291,7 +294,7 @@ export const localStore: HabitStore = {
         };
     if (!existing) db.entries.push(entry);
     write(db);
-    return entry;
+    return normalizeEntry(entry);
   },
 
   async deleteEntry(habitId, date) {

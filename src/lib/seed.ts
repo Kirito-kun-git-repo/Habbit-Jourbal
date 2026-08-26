@@ -128,7 +128,8 @@ export async function seedDemoData(days = 38) {
         completed: subtaskIds.length === 0 || doneSubtasks.length === subtaskIds.length,
         completed_subtasks: doneSubtasks,
         note: wantsNote ? noteOptions[Math.floor(rand(seed + 0.9) * noteOptions.length)] : null,
-        photo_path: photoPath,
+        photo_paths: photoPath ? [photoPath] : [],
+        subtask_photos: {},
       });
     }
   }

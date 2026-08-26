@@ -10,8 +10,19 @@ export const MAX_CHART_HEIGHT = 460;
 /** Comparison window for the direction arrow, in days. */
 const WINDOW = 7;
 
-/** How far above a bar's top the line rides, in px. */
-const LINE_LIFT = 6;
+/**
+ * The plot is divided into four cells by the gridlines. The top one is left
+ * empty: bars are drawn into the lower three, so the trend line always rides a
+ * full cell clear of them instead of grazing the tallest bar.
+ */
+const HEADROOM = 0.25;
+const BAR_SCALE = 1 - HEADROOM;
+
+/** Height of a day's bar and of the line above it, as fractions of the plot. */
+function levels(fraction: number) {
+  const bar = fraction * BAR_SCALE;
+  return { bar, line: bar + HEADROOM };
+}
 
 export type DaySegment = { habitId: string; color: string; share: number };
 export type DayTotal = { fraction: number; done: number; segments: DaySegment[] };
@@ -48,18 +59,18 @@ export function DayTotalChart({
   todayISO: ISODate;
   height: number;
 }) {
-  // The line sits just above each bar rather than cutting through it.
-  const linePoints = useMemo(() => {
-    const lift = (LINE_LIFT / height) * 100;
-    return days
-      .filter((d) => d <= todayISO)
-      .map((date, i) => {
-        const fraction = totals[date]?.fraction ?? 0;
-        const y = Math.max(0, (1 - fraction) * 100 - lift);
-        return `${i + 0.5},${y}`;
-      })
-      .join(" ");
-  }, [days, totals, todayISO, height]);
+  // The line sits a whole cell above each bar rather than cutting through it.
+  const linePoints = useMemo(
+    () =>
+      days
+        .filter((d) => d <= todayISO)
+        .map((date, i) => {
+          const { line } = levels(totals[date]?.fraction ?? 0);
+          return `${i + 0.5},${(1 - line) * 100}`;
+        })
+        .join(" "),
+    [days, totals, todayISO],
+  );
 
   return (
     <div className="relative" style={{ height }}>
@@ -80,6 +91,7 @@ export function DayTotalChart({
         {days.map((date) => {
           const { fraction = 0, done = 0, segments = [] } = totals[date] ?? {};
           const pct = Math.round(fraction * 100);
+          const { bar, line } = levels(fraction);
           const future = date > todayISO;
           return (
             <div
@@ -94,7 +106,7 @@ export function DayTotalChart({
               {fraction > 0 && (
                 <div
                   className="flex w-full flex-col-reverse overflow-hidden rounded-t-[3px] transition-[height] duration-200"
-                  style={{ height: `${fraction * 100}%`, opacity: future ? 0.35 : 1 }}
+                  style={{ height: `${bar * 100}%`, opacity: future ? 0.35 : 1 }}
                 >
                   {segments.map((segment) => (
                     <div
@@ -114,7 +126,7 @@ export function DayTotalChart({
                 <span
                   className="pointer-events-none absolute left-1/2 h-[5px] w-[5px] -translate-x-1/2 rounded-full border border-surface"
                   style={{
-                    bottom: `calc(${fraction * 100}% + ${LINE_LIFT - 2.5}px)`,
+                    bottom: `calc(${line * 100}% - 2.5px)`,
                     backgroundColor: "var(--color-ink)",
                   }}
                   aria-hidden="true"
@@ -125,8 +137,8 @@ export function DayTotalChart({
         })}
       </div>
 
-      {/* Rides along the bar tops. The viewBox is stretched to the day columns,
-          so the stroke is pinned to a constant width. */}
+      {/* Rides a cell above the bar tops. The viewBox is stretched to the day
+          columns, so the stroke is pinned to a constant width. */}
       <svg
         className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
         viewBox={`0 0 ${days.length} 100`}

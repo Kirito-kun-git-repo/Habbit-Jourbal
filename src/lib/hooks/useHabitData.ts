@@ -1,7 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { store, type EntryDraft, type Habit, type HabitEntry, type Subtask } from "@/lib/data";
+import {
+  entryPhotoPaths,
+  store,
+  type EntryDraft,
+  type Habit,
+  type HabitEntry,
+  type Subtask,
+} from "@/lib/data";
 import { nextColorForPosition } from "@/lib/colors";
 import type { ISODate } from "@/lib/dates";
 
@@ -136,7 +143,11 @@ export function useHabitData(onError: (message: string) => void) {
         return next;
       });
       try {
-        if (previous?.photo_path) await store.removePhoto(previous.photo_path).catch(() => {});
+        if (previous) {
+          await Promise.all(
+            entryPhotoPaths(previous).map((path) => store.removePhoto(path).catch(() => {})),
+          );
+        }
         await store.deleteEntry(habitId, date);
         return true;
       } catch (error) {

@@ -1,5 +1,6 @@
 import { supabaseClient } from "@/lib/supabase/client";
 import type { ISODate } from "@/lib/dates";
+import { normalizeEntry } from "./normalize";
 import {
   StoreError,
   type EntryDraft,
@@ -154,7 +155,7 @@ export const supabaseStore: HabitStore = {
       .lte("date", to)
       .order("date", { ascending: true });
     if (error) fail("Could not load entries", error);
-    return (data ?? []) as HabitEntry[];
+    return ((data ?? []) as HabitEntry[]).map(normalizeEntry);
   },
 
   async listAllEntries() {
@@ -163,7 +164,7 @@ export const supabaseStore: HabitStore = {
       .select("*")
       .order("date", { ascending: true });
     if (error) fail("Could not load entries", error);
-    return (data ?? []) as HabitEntry[];
+    return ((data ?? []) as HabitEntry[]).map(normalizeEntry);
   },
 
   async upsertEntry(draft: EntryDraft) {
@@ -174,7 +175,7 @@ export const supabaseStore: HabitStore = {
       .select()
       .single();
     if (error || !data) fail("Could not save the entry", error);
-    return data as HabitEntry;
+    return normalizeEntry(data as HabitEntry);
   },
 
   async deleteEntry(habitId, date) {

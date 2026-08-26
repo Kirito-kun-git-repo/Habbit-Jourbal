@@ -35,7 +35,7 @@ export function WeeklyView({
       const dayEntries = habits
         .map((habit) => entryMap[habit.id]?.[date])
         .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
-        .filter((entry) => entry.note?.trim() || entry.photo_path)
+        .filter((entry) => hasContent(entry))
         .map((entry) => ({
           ...entry,
           habitName: names.get(entry.habit_id) ?? "",
